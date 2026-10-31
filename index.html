@@ -106,7 +106,7 @@
     <section class="panel leaderboard-panel"><div class="panel-heading"><div><span class="section-kicker">СОСТЯЗАНИЕ</span><h2>Лидерборд игроков</h2></div><span class="trophy">🏆</span></div><div class="player-entry"><label for="player-name">Имя игрока</label><input id="player-name" maxlength="20" placeholder="Введи свой ник"><button id="save-player" class="text-button">Сохранить профиль</button><button id="logout-button" class="text-button">Выйти</button></div><p class="leaderboard-note">Публичный рейтинг: показывается самый редкий номер каждого игрока и его стоимость.</p><div class="leaderboard-refresh" id="leaderboard-refresh">Обновление через 60 сек.</div><div id="leaderboard" class="leaderboard-list"><div class="history-empty">Стань первым участником рейтинга</div></div></section>
     <footer><span class="footer-brand">НОМГЕН</span><span>Крути. Собирай. Богатей. Найди номер мечты!</span><button id="reset-game" class="reset-button">Сбросить прогресс</button></footer>
   </main>
-  <nav class="bottom-nav" aria-label="Основная навигация"><button id="home-button" class="bottom-nav-item active"><span class="nav-icon">⌂</span><span class="nav-label">Главная</span></button><button id="menu-button" class="bottom-nav-item"><span class="nav-icon">☷</span><span class="nav-label">Меню</span></button></nav>
+  <nav class="bottom-nav" aria-label="Основная навигация"><button id="home-button" class="bottom-nav-item active"><span class="nav-icon">⌂</span><span class="nav-label">Главная</span></button><button id="leaders-button" class="bottom-nav-item"><span class="nav-icon ladder-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v18M19 3v18M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 7v10m6-10v10" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/></svg></span><span class="nav-label">Лидеры</span></button><button id="menu-button" class="bottom-nav-item"><span class="nav-icon">☷</span><span class="nav-label">Меню</span></button></nav>
   <div id="win-overlay" class="win-overlay" role="dialog" aria-modal="true" aria-label="Редкая находка">
     <div class="win-card">
       <button id="win-close" class="win-close" aria-label="Закрыть">×</button>
@@ -123,6 +123,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261031-bottom-nav-menu-design"></script>
+  <script src="app.js?v=20261031-leaders-nav"></script>
 </body>
 </html>
