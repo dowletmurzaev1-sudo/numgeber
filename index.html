@@ -98,10 +98,27 @@
     <section class="panel admin-panel">
       <div class="panel-heading"><div><span class="section-kicker">УПРАВЛЕНИЕ ИГРОЙ</span><h2>Админ-панель</h2></div><button id="admin-toggle" class="text-button">Открыть</button></div>
       <div id="admin-content" hidden>
-        <p class="admin-warning">Измени веса редкостей. Чем выше число, тем чаще выпадает этот уровень. Итоговые шансы автоматически нормализуются до 100%.</p>
-        <div id="odds-controls" class="odds-controls"></div>
-        <div class="admin-actions"><button id="apply-odds" class="spin-button">Сохранить шансы</button><button id="reset-odds" class="text-button">Вернуть стандартные</button></div>
-        <p id="odds-status" class="admin-status">Глобальные настройки применяются ко всем игрокам после подключения Supabase.</p>
+        <nav class="admin-tabs" aria-label="Разделы админ-панели">
+          <button class="admin-tab active" data-admin-tab="players">Игроки</button>
+          <button class="admin-tab" data-admin-tab="odds">Шансы</button>
+          <button class="admin-tab" data-admin-tab="money">Изменить деньги</button>
+        </nav>
+        <section class="admin-section" id="admin-players">
+          <div class="admin-actions"><button id="refresh-admin-players" class="text-button">Обновить список</button></div>
+          <div id="admin-player-list" class="admin-player-list"><p class="admin-status">Нажми «Обновить список».</p></div>
+        </section>
+        <section class="admin-section" id="admin-odds" hidden>
+          <p class="admin-warning">Измени веса редкостей. Чем выше число, тем чаще выпадает этот уровень. Итоговые шансы автоматически нормализуются до 100%.</p>
+          <div id="odds-controls" class="odds-controls"></div>
+          <div class="admin-actions"><button id="apply-odds" class="spin-button">Сохранить шансы</button><button id="reset-odds" class="text-button">Вернуть стандартные</button></div>
+        </section>
+        <section class="admin-section" id="admin-money" hidden>
+          <label class="admin-field">Игрок<select id="money-player"><option value="">Сначала загрузи список игроков</option></select></label>
+          <label class="admin-field">Новый баланс, ₽<input id="money-balance" type="number" min="0" step="1" value="5000"></label>
+          <button id="save-player-balance" class="spin-button">Сохранить баланс</button>
+          <p class="admin-status">Баланс изменится в облачном сохранении выбранного игрока.</p>
+        </section>
+        <p id="odds-status" class="admin-status">Настройки доступны только администратору.</p>
       </div>
     </section>
     <footer><span class="footer-brand">НОМГЕН</span><span>Крути. Собирай. Богатей. Найди номер мечты!</span><button id="reset-game" class="reset-button">Сбросить прогресс</button></footer>
@@ -109,6 +126,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20261031-admin2"></script>
 </body>
 </html>
