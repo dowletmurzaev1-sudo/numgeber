@@ -37,13 +37,14 @@
       <div class="stat"><span class="stat-icon">₽</span><div><small>ВАШ БАЛАНС</small><strong id="balance">5 000 ₽</strong></div></div>
       <button id="collection-open" class="stat collection-open" type="button" aria-label="Открыть коллекцию"><span class="stat-icon collection-icon">▤</span><span><small>В КОЛЛЕКЦИИ</small><strong id="collection-count">0 номеров</strong></span></button>
     </div>
-    <button id="settings-open" class="settings-open" type="button" aria-label="Настройки">⚙</button><button id="profile-button" class="profile-button" aria-label="Открыть профиль"><span id="profile-avatar" class="profile-avatar"><span>И</span></span><span class="profile-button-label">Профиль</span></button>
+    <button id="profile-button" class="profile-button" aria-label="Открыть профиль"><span id="profile-avatar" class="profile-avatar"><span>И</span></span><span class="profile-button-label">Профиль</span></button>
   </header>
   <div id="auth-success" class="auth-success" role="status" aria-live="polite" hidden></div>
   <div id="profile-modal" class="profile-modal" hidden>
     <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
       <button id="profile-close" class="profile-close" aria-label="Закрыть">×</button>
       <h2 id="profile-title">Мой профиль</h2>
+      <button id="settings-open" class="profile-settings-open" type="button">⚙ Настройки звука</button>
       <div id="profile-preview" class="profile-preview"><span>И</span></div>
       <label class="avatar-upload" for="avatar-file">Изменить фотографию</label>
       <input id="avatar-file" type="file" accept="image/*" hidden>
@@ -56,12 +57,14 @@
   <div id="settings-modal" class="feature-modal" hidden>
     <section class="feature-card settings-window" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <button class="feature-close" id="settings-close" aria-label="Закрыть">×</button>
-      <h2 id="settings-title">Настройки и улучшения</h2>
+      <h2 id="settings-title">Настройки</h2>
+      <section class="sound-settings"><h3>Звук и музыка</h3><button id="music-toggle" class="upgrade-toggle" type="button">Включить фоновую музыку</button><label class="volume-control" for="music-volume">Громкость <span id="music-volume-value">35%</span><input id="music-volume" type="range" min="0" max="100" value="35"></label></section>
+      <h2 class="upgrade-heading">Улучшения</h2>
       <div class="upgrade-grid">
         <article class="upgrade-card"><span class="section-kicker">УЛУЧШЕНИЕ</span><h3>Удача <strong id="luck-level">×1</strong></h3><p id="luck-description">Повышает шанс редких номеров.</p><button id="buy-luck" class="upgrade-buy">Улучшить · 10 000 ₽</button></article>
         <article class="upgrade-card"><span class="section-kicker">УЛУЧШЕНИЕ</span><h3>Автотап <strong id="autotap-level">1,00 сек.</strong></h3><p id="autotap-description">Автоматически запускает генератор.</p><button id="toggle-autotap" class="upgrade-toggle">Включить автотап</button><button id="buy-autotap" class="upgrade-buy">Ускорить · 1 000 000 ₽</button></article>
       </div>
-      <button id="admin-secret" class="admin-secret">95</button>
+      <button id="admin-secret" class="admin-secret" type="button" hidden>95</button>
       <section class="panel admin-panel" id="admin-panel" hidden>
         <div class="panel-heading"><div><span class="section-kicker">УПРАВЛЕНИЕ ИГРОЙ</span><h2>Админ-панель</h2></div><button id="admin-toggle" class="text-button">Открыть</button></div>
         <div id="admin-content" hidden>
@@ -108,6 +111,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261031-upgrades1"></script>
+  <script src="app.js?v=20261031-profilemusic1"></script>
 </body>
 </html>
