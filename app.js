@@ -11,6 +11,7 @@
   let adminUser = null;
   let currentUser = null;
   let playerReady = false;
+  let loadingUserId = null;
   let saveQueue = Promise.resolve();
   let playerName = localStorage.getItem("nomgen-player-name") || "Игрок";
   let avatarData = localStorage.getItem("nomgen-avatar") || "";
@@ -60,29 +61,41 @@
   }
   async function loadPlayer(user){
     if(!user)return;
-    if(currentUser?.id===user.id && playerReady){showGame();return;}
+    if(currentUser?.id===user.id && (playerReady||loadingUserId===user.id)){showGame();return;}
     currentUser=user;
-    avatarData=user.user_metadata?.avatar_data||"";
+    loadingUserId=user.id;
+    // Сразу закрываем экран входа после подтверждения сессии Google.
+    showGame();
+    avatarData=user.user_metadata?.avatar_data||localStorage.getItem("nomgen-avatar")||"";
     if(avatarData)localStorage.setItem("nomgen-avatar",avatarData);
     renderProfileButton();
-    const {data:isAdmin}=await supabase.rpc("is_nomgen_admin");
-    if(isAdmin){adminUser=user;$("admin-content").hidden=false;renderOdds();}
-    const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
-    if(error){$("auth-error").textContent="Не удалось загрузить прогресс: "+error.message;render();showGame();return;}
-    if(data?.game_state && typeof data.game_state.balance==="number"){
-      Object.assign(state,data.game_state);
-      const {data:profile}=await supabase.from("nomgen_players").select("display_name").eq("user_id",user.id).maybeSingle();
-      playerName=(profile?.display_name||user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок").slice(0,20);
-    }else{
-      playerName=(user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок").slice(0,20);
-      await persistProfile();
+    try{
+      const {data:isAdmin,error:adminError}=await supabase.rpc("is_nomgen_admin");
+      if(!adminError&&isAdmin){adminUser=user;$("admin-content").hidden=false;renderOdds();}
+      const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
+      if(error)throw error;
+      if(data?.game_state && typeof data.game_state.balance==="number"){
+        Object.assign(state,data.game_state);
+        const {data:profile,error:profileError}=await supabase.from("nomgen_players").select("display_name").eq("user_id",user.id).maybeSingle();
+        if(profileError)console.warn("Profile name could not be loaded:",profileError.message);
+        playerName=(profile?.display_name||user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок").slice(0,20);
+      }else{
+        playerName=(user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок").slice(0,20);
+        await persistProfile();
+      }
+      localStorage.setItem("nomgen-player-name",playerName);
+      $("player-name").value=playerName;
+      render();
+      renderProfileButton();
+      await refreshLeaderboard();
+    }catch(error){
+      console.error("Player data load failed:",error);
+      $("auth-error").textContent="Вход выполнен, но не удалось загрузить облачный прогресс: "+(error.message||error);
+      notify("Вход в Google выполнен. Ошибка загрузки прогресса.");
+    }finally{
+      loadingUserId=null;
+      showGame();
     }
-    localStorage.setItem("nomgen-player-name",playerName);
-    $("player-name").value=playerName;
-    render();
-    renderProfileButton();
-    showGame();
-    await refreshLeaderboard();
   }
   async function persistProfile(){
     if(!currentUser||!supabase)return;
@@ -212,43 +225,59 @@
       $("odds-status").textContent="Supabase не настроен. Заполни supabase-config.js и выполни supabase/schema.sql.";
       $("admin-toggle").disabled=true;return;
     }
-    supabase=window.supabase.createClient(cfg.url,cfg.anonKey);
-    const {data,error}=await supabase.from("nomgen_settings").select("weights").eq("id",1).single();
-    if(!error&&Array.isArray(data.weights)&&data.weights.length===5&&data.weights.some(x=>Number(x)>0)){weights=data.weights.map(Number);renderOdds();}
-    else $("odds-status").textContent="Ошибка загрузки глобальных шансов: "+(error?.message||"проверь SQL");
-    supabase.channel("nomgen-global-settings").on("postgres_changes",{event:"UPDATE",schema:"public",table:"nomgen_settings",filter:"id=eq.1"},payload=>{
-      if(Array.isArray(payload.new.weights)){weights=payload.new.weights.map(Number);renderOdds();}
-    }).subscribe();
-    // Слушатель ставим до getSession: OAuth-возврат может прийти раньше чтения сессии.
+    supabase=window.supabase.createClient(cfg.url,cfg.anonKey,{
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"}
+    });
+    // Слушатель авторизации регистрируется до любых сетевых запросов.
     supabase.auth.onAuthStateChange((event,session)=>{
       if((event==="SIGNED_IN"||event==="INITIAL_SESSION"||event==="TOKEN_REFRESHED")&&session?.user){
-        $("auth-gate").hidden=true;
-        document.body.classList.remove("auth-required");
-        setTimeout(()=>loadPlayer(session.user).catch(err=>{
-          console.error("Profile loading failed:",err);
-          $("auth-error").textContent="Не удалось загрузить данные: "+(err.message||err);
-          render();showGame();
-        }),0);
+        showGame();
+        if(event==="SIGNED_IN")showRegistrationSuccess();
+        setTimeout(()=>loadPlayer(session.user),0);
       }
       if(event==="SIGNED_OUT"){
-        currentUser=null;playerReady=false;
+        currentUser=null;playerReady=false;loadingUserId=null;
         $("auth-gate").hidden=false;
         document.body.classList.add("auth-required");
         $("spin-button").disabled=true;
       }
     });
-    const {data:sessionData}=await supabase.auth.getSession();
-    if(sessionData?.session?.user){
-      $("auth-gate").hidden=true;
-      document.body.classList.remove("auth-required");
-      await loadPlayer(sessionData.session.user);
-    }else{
+    try{
+      const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+      if(sessionError)throw sessionError;
+      if(sessionData?.session?.user){
+        showGame();
+        await loadPlayer(sessionData.session.user);
+      }else{
+        $("auth-gate").hidden=false;
+        document.body.classList.add("auth-required");
+        $("spin-button").disabled=true;
+      }
+    }catch(error){
+      console.error("Session initialization failed:",error);
+      $("auth-error").textContent="Не удалось проверить вход: "+(error.message||error);
       $("auth-gate").hidden=false;
       document.body.classList.add("auth-required");
-      $("spin-button").disabled=true;
     }
+    // Настройки и рейтинг загружаются отдельно — их ошибки не блокируют вход.
+    try{
+      const {data,error}=await supabase.from("nomgen_settings").select("weights").eq("id",1).single();
+      if(!error&&Array.isArray(data?.weights)&&data.weights.length===5&&data.weights.some(x=>Number(x)>0)){weights=data.weights.map(Number);renderOdds();}
+      else $("odds-status").textContent="Ошибка загрузки глобальных шансов: "+(error?.message||"проверь SQL");
+      supabase.channel("nomgen-global-settings").on("postgres_changes",{event:"UPDATE",schema:"public",table:"nomgen_settings",filter:"id=eq.1"},payload=>{
+        if(Array.isArray(payload.new.weights)){weights=payload.new.weights.map(Number);renderOdds();}
+      }).subscribe();
+    }catch(error){console.warn("Global settings unavailable:",error);}
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
+  function showRegistrationSuccess(){
+    const el=$("auth-success");
+    if(!el)return;
+    el.hidden=false;
+    el.textContent="✓ Регистрация прошла успешно";
+    el.classList.add("visible");
+    window.setTimeout(()=>{el.classList.remove("visible");el.hidden=true;},5000);
+  }
   function renderProfileButton(){
     const img=$("profile-avatar");
     if(!img)return;
