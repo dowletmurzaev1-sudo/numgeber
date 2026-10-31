@@ -1,5 +1,5 @@
-// Заполни значениями из Supabase → Project Settings → API.
+// Публичные параметры Supabase. Не добавляйте сюда service_role/secret key.
 window.NOMGEN_SUPABASE = {
-  url: "YOUR_SUPABASE_PROJECT_URL",
-  anonKey: "YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY"
+  url: "https://ctuevujtnzjotwwwwszb.supabase.co",
+  anonKey: "sb_publishable_dtmZwCZC7tNGwjuaheje_A_xcRpm0TU"
 };
