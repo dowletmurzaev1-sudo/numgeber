@@ -32,9 +32,9 @@
   function load(){
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if(saved && typeof saved.balance === "number" && Array.isArray(saved.collection) && Array.isArray(saved.sales)) return {...saved, spins:Number(saved.spins)||0, balance:Math.max(0,saved.balance)};
+      if(saved && typeof saved.balance === "number" && Array.isArray(saved.collection) && Array.isArray(saved.sales)) return {...saved, spins:Number(saved.spins)||0, balance:Math.max(0,saved.balance), luckLevel:Math.min(5,Math.max(0,Number(saved.luckLevel)||0)), autoTapLevel:Math.min(3,Math.max(0,Number(saved.autoTapLevel)||0)), autoTapEnabled:Boolean(saved.autoTapEnabled)};
     } catch(e) {}
-    return {balance:5000,collection:[],sales:[],spins:0,nextId:1};
+    return {balance:5000,collection:[],sales:[],spins:0,nextId:1,luckLevel:0,autoTapLevel:0,autoTapEnabled:false};
   }
   function save(){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
@@ -129,10 +129,17 @@
     if(left===0)refreshLeaderboard();
   },1000);
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
+  const LUCK_MULTIPLIERS=[1,1.1,1.3,1.5,1.7,2];
+  const LUCK_COSTS=[10000,150000,700000,2500000,7000000];
+  const AUTOTAP_INTERVALS=[1000,900,800,700];
+  const AUTOTAP_COSTS=[1000000,8000000,17000000];
+  let autoTapTimer=null;
   function chooseTier(){
-    const total=weights.reduce((sum,n)=>sum+n,0);
+    const luck=LUCK_MULTIPLIERS[state.luckLevel]||1;
+    const effectiveWeights=weights.map((weight,index)=>index===0?weight:weight*luck);
+    const total=effectiveWeights.reduce((sum,n)=>sum+n,0);
     let roll=Math.random()*total;
-    for(let i=0;i<tiers.length;i++){roll-=weights[i];if(roll<0)return tiers[i];}
+    for(let i=0;i<tiers.length;i++){roll-=effectiveWeights[i];if(roll<0)return tiers[i];}
     return tiers[0];
   }
   function patternScore(digits, chars){
@@ -167,6 +174,7 @@
   }
   function notify(message){const el=$("toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2400);}
   function spin(){
+    if($("spin-button").disabled)return;
     if(state.balance<COST){notify("Недостаточно средств для попытки");return;}
     state.balance-=COST;state.spins++;save();render();
     const btn=$("spin-button"),machine=$("plate-wrap"),panel=$("generator-panel");
@@ -177,7 +185,7 @@
     const interval=setInterval(()=>{
       $("plate-main").textContent=letters[Math.floor(Math.random()*letters.length)]+String(Math.floor(Math.random()*1000)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
       $("plate-region").textContent=regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
-      if(ticks>=17){
+      if(ticks>=10){
         clearInterval(interval);machine.classList.remove("spinning");
         const item=makeNumber();state.collection.unshift(item);save();
         $("plate-main").textContent=item.plate;$("plate-region").textContent=item.region;
@@ -187,7 +195,7 @@
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
         render();notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
       }
-    },85);
+    },60);
   }
   function sell(id){
     const index=state.collection.findIndex(x=>x.id===id);if(index<0)return;
@@ -207,6 +215,27 @@
     state.balance+=total;dupes.forEach(x=>state.sales.unshift({plate:x.plate,region:x.region,tier:x.tier,value:x.value,date:Date.now()}));
     save();render();notify("Продано дубликатов: "+dupes.length+" на "+money(total));
   }
+  function renderUpgrades(){
+    const luckLevel=Math.min(5,Math.max(0,Number(state.luckLevel)||0));
+    const autoLevel=Math.min(3,Math.max(0,Number(state.autoTapLevel)||0));
+    $("luck-level").textContent="×"+LUCK_MULTIPLIERS[luckLevel];
+    $("luck-description").textContent=luckLevel===5?"Максимальный уровень удачи.":"Следующий уровень: ×"+LUCK_MULTIPLIERS[luckLevel+1]+" — повышает вероятность редких номеров.";
+    $("buy-luck").textContent=luckLevel===5?"МАКС":"Улучшить · "+money(LUCK_COSTS[luckLevel]);
+    $("buy-luck").disabled=luckLevel===5;
+    $("autotap-level").textContent=(AUTOTAP_INTERVALS[autoLevel]/1000).toFixed(2).replace(".",",")+" сек.";
+    $("autotap-description").textContent=autoLevel===3?"Максимальная скорость автотапа.":"Следующий уровень: один запуск каждые "+(AUTOTAP_INTERVALS[autoLevel+1]/1000).toFixed(2).replace(".",",")+" сек.";
+    $("buy-autotap").textContent=autoLevel===3?"МАКС":"Ускорить · "+money(AUTOTAP_COSTS[autoLevel]);
+    $("buy-autotap").disabled=autoLevel===3;
+    $("toggle-autotap").textContent=state.autoTapEnabled?"Выключить автотап":"Включить автотап";
+    $("toggle-autotap").classList.toggle("active",state.autoTapEnabled);
+  }
+  function configureAutoTap(){
+    if(autoTapTimer){clearInterval(autoTapTimer);autoTapTimer=null;}
+    if(state.autoTapEnabled){
+      autoTapTimer=setInterval(()=>{if(!document.hidden&&!$("spin-button").disabled)spin();},AUTOTAP_INTERVALS[state.autoTapLevel]||1000);
+    }
+    if($("toggle-autotap"))renderUpgrades();
+  }
   function render(){
     $("balance").textContent=money(state.balance);$("collection-count").textContent=state.collection.length+" "+plural(state.collection.length,["номер","номера","номеров"]);
     $("collection-badge").textContent=state.collection.length;$("spins-count").textContent=state.spins;
@@ -222,6 +251,7 @@
     if(sort==="new")items.sort((a,b)=>b.created-a.created);
     $("empty-state").style.display=items.length?"none":"block";
     $("collection-grid").innerHTML=items.map(item=>`<article class="number-card rarity-${item.key}" style="--tier:${item.color}"><div class="card-top"><span class="tier-tag">${item.tier}</span><span class="card-id">#${String(item.id).padStart(4,"0")}</span></div><div class="small-plate">${item.plate}<small style="font:9px Manrope;margin-left:7px;border-left:1px solid #17212a;padding-left:5px">${item.region}</small></div><div class="card-bottom"><strong class="card-price">${money(item.value)}</strong><button class="sell-button" data-sell="${item.id}">Продать</button></div></article>`).join("");
+    renderUpgrades();
     $("sales-count").textContent=state.sales.length+" "+plural(state.sales.length,["операция","операции","операций"]);
     $("history-list").innerHTML=state.sales.length?state.sales.slice(0,30).map(s=>`<div class="history-row"><div><strong>${s.plate} · ${s.region}</strong><small>${s.tier} · ${new Date(s.date).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div><span class="history-amount">+${money(s.value)}</span></div>`).join(""):'<div class="history-empty">Здесь появятся твои сделки</div>';
   }
@@ -337,6 +367,29 @@
     img.innerHTML=source?'<img src="'+source+'" alt="Аватар">':'<span>'+(escapeHtml((playerName||"И").trim().charAt(0).toUpperCase()||"И"))+'</span>';
     $("profile-button").setAttribute("aria-label","Профиль: "+playerName);
   }
+  $("settings-open").addEventListener("click",()=>{$("settings-modal").hidden=false;renderUpgrades();});
+  $("settings-close").addEventListener("click",()=>{$("settings-modal").hidden=true;});
+  $("settings-modal").addEventListener("click",e=>{if(e.target===$("settings-modal"))$("settings-modal").hidden=true;});
+  $("collection-open").addEventListener("click",()=>{$("collection-modal").hidden=false;});
+  $("collection-close").addEventListener("click",()=>{$("collection-modal").hidden=true;});
+  $("collection-modal").addEventListener("click",e=>{if(e.target===$("collection-modal"))$("collection-modal").hidden=true;});
+  $("admin-secret").addEventListener("click",()=>{$("admin-panel").hidden=false;});
+  $("buy-luck").addEventListener("click",()=>{
+    const level=state.luckLevel||0;if(level>=5)return;
+    const price=LUCK_COSTS[level];
+    if(state.balance<price){notify("Недостаточно денег для улучшения удачи");return;}
+    state.balance-=price;state.luckLevel=level+1;save();render();notify("Удача улучшена до ×"+LUCK_MULTIPLIERS[state.luckLevel]);
+  });
+  $("buy-autotap").addEventListener("click",()=>{
+    const level=state.autoTapLevel||0;if(level>=3)return;
+    const price=AUTOTAP_COSTS[level];
+    if(state.balance<price){notify("Недостаточно денег для улучшения автотапа");return;}
+    state.balance-=price;state.autoTapLevel=level+1;save();configureAutoTap();render();notify("Автотап ускорен");
+  });
+  $("toggle-autotap").addEventListener("click",()=>{
+    state.autoTapEnabled=!state.autoTapEnabled;save();configureAutoTap();
+    notify(state.autoTapEnabled?"Автотап включён":"Автотап выключен");
+  });
   $("profile-button").addEventListener("click",()=>{
     $("profile-name").value=playerName;
     $("profile-preview").innerHTML=avatarData?'<img src="'+avatarData+'" alt="Аватар">':'<span>'+(escapeHtml(playerName.charAt(0).toUpperCase()||"И"))+'</span>';
@@ -384,7 +437,7 @@
     if(!accepted)return;
     currentUser=null;adminUser=null;playerReady=false;
     if(supabase) await supabase.auth.signOut();
-    state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;
+    state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;state.autoTapLevel=0;state.autoTapEnabled=false;configureAutoTap();
     localStorage.removeItem(STORAGE_KEY);
     save();
     $("plate-main").textContent="А000АА";$("plate-region").textContent="77";
@@ -394,7 +447,7 @@
     $("result-info").className="result-info";
     $("player-name").value="Игрок";
     playerName="Игрок";avatarData="";localStorage.removeItem("nomgen-avatar");renderProfileButton();localStorage.setItem("nomgen-player-name",playerName);
-    render();showGame();
+    render();renderUpgrades();showGame();
   });
   $("google-login").addEventListener("click",async()=>{
     if(!supabase){$("auth-error").textContent="Supabase не настроен.";return;}
@@ -457,6 +510,8 @@
   $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция и история будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
   $("player-name").value=playerName;
   render();
+  renderUpgrades();
+  configureAutoTap();
   renderProfileButton();
   initSupabase();
 })();
