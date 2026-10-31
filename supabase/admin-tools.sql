@@ -171,3 +171,83 @@ grant execute on function public.get_my_rare_weights() to authenticated;
 grant execute on function public.admin_get_player_weights(uuid) to authenticated;
 grant execute on function public.admin_set_player_weights(uuid,jsonb) to authenticated;
 grant execute on function public.admin_set_player_balance(uuid,numeric) to authenticated;
+
+
+-- Гарантированная выдача администратором конкретного номера выбранному игроку.
+create table if not exists public.nomgen_forced_numbers (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  plate text not null,
+  region text not null,
+  remaining integer not null check (remaining >= 0),
+  updated_at timestamptz not null default now()
+);
+alter table public.nomgen_forced_numbers enable row level security;
+
+create or replace function public.admin_set_forced_number(
+  target_user_id uuid, forced_plate text, forced_region text, spin_count integer
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare normalized_plate text := upper(regexp_replace(coalesce(forced_plate,''),'\\s','','g'));
+begin
+  if not exists (select 1 from public.nomgen_admins a where a.user_id=(select auth.uid())) then
+    raise exception 'Недостаточно прав администратора';
+  end if;
+  if not exists(select 1 from auth.users u where u.id=target_user_id) then
+    raise exception 'Игрок не найден';
+  end if;
+  if normalized_plate !~ '^[АВЕКМНОРСТУХ][0-9]{3}[АВЕКМНОРСТУХ]{2}$' then
+    raise exception 'Номер должен быть в формате А777АА';
+  end if;
+  if coalesce(forced_region,'') !~ '^[0-9]{2,3}$' then
+    raise exception 'Регион должен содержать 2–3 цифры';
+  end if;
+  if spin_count is null or spin_count < 1 or spin_count > 100 then
+    raise exception 'Количество попыток должно быть от 1 до 100';
+  end if;
+  insert into public.nomgen_forced_numbers(user_id,plate,region,remaining,updated_at)
+  values(target_user_id,normalized_plate,forced_region,spin_count,now())
+  on conflict(user_id) do update
+    set plate=excluded.plate,region=excluded.region,remaining=excluded.remaining,updated_at=now();
+end;
+$$;
+
+create or replace function public.admin_clear_forced_number(target_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from public.nomgen_admins a where a.user_id=(select auth.uid())) then
+    raise exception 'Недостаточно прав администратора';
+  end if;
+  delete from public.nomgen_forced_numbers where user_id=target_user_id;
+end;
+$$;
+
+create or replace function public.consume_forced_number()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare result jsonb;
+begin
+  update public.nomgen_forced_numbers
+  set remaining=remaining-1,updated_at=now()
+  where user_id=(select auth.uid()) and remaining>0
+  returning jsonb_build_object('plate',plate,'region',region) into result;
+  return result;
+end;
+$$;
+
+revoke all on function public.admin_set_forced_number(uuid,text,text,integer) from public;
+revoke all on function public.admin_clear_forced_number(uuid) from public;
+revoke all on function public.consume_forced_number() from public;
+grant execute on function public.admin_set_forced_number(uuid,text,text,integer) to authenticated;
+grant execute on function public.admin_clear_forced_number(uuid) to authenticated;
+grant execute on function public.consume_forced_number() to authenticated;
