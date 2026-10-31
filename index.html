@@ -29,7 +29,21 @@
       <div class="stat"><span class="stat-icon">₽</span><div><small>ВАШ БАЛАНС</small><strong id="balance">5 000 ₽</strong></div></div>
       <div class="stat"><span class="stat-icon collection-icon">▤</span><div><small>В КОЛЛЕКЦИИ</small><strong id="collection-count">0 номеров</strong></div></div>
     </div>
+    <button id="profile-button" class="profile-button" aria-label="Открыть профиль"><span id="profile-avatar" class="profile-avatar"><span>И</span></span><span class="profile-button-label">Профиль</span></button>
   </header>
+  <div id="profile-modal" class="profile-modal" hidden>
+    <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+      <button id="profile-close" class="profile-close" aria-label="Закрыть">×</button>
+      <h2 id="profile-title">Мой профиль</h2>
+      <div id="profile-preview" class="profile-preview"><span>И</span></div>
+      <label class="avatar-upload" for="avatar-file">Изменить фотографию</label>
+      <input id="avatar-file" type="file" accept="image/*" hidden>
+      <button id="avatar-remove" class="text-button" type="button">Убрать аватар</button>
+      <label class="profile-name-label" for="profile-name">Имя игрока</label>
+      <input id="profile-name" class="profile-name-input" maxlength="20" placeholder="Имя игрока">
+      <button id="profile-save" class="profile-save" type="button">Сохранить</button>
+    </section>
+  </div>
 
   <main class="shell">
     <section class="hero">
