@@ -179,7 +179,7 @@
   function notify(message){const el=$("toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2400);}
   function makeForcedNumber(forced){
     const plate=String(forced.plate||"").toUpperCase();
-    const match=plate.match(/^([АВЕКМНОРСТУХ])(\\d{3})([АВЕКМНОРСТУХ]{2})$/);
+    const match=plate.match(/^([АВЕКМНОРСТУХ])(\d{3})([АВЕКМНОРСТУХ]{2})$/);
     if(!match)return makeNumber();
     const region=String(forced.region||"77");
     const value=Math.round((15000000+Math.random()*35000000)/50)*50;
@@ -607,12 +607,12 @@
   $("forced-save").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
     const userId=$("forced-player").value;
-    const plate=$("forced-plate").value.trim().toUpperCase().replace(/\\s/g,"");
+    const plate=$("forced-plate").value.trim().toUpperCase().replace(/\s/g,"");
     const region=$("forced-region").value.trim();
     const count=Number($("forced-count").value);
     if(!userId){notify("Выбери игрока");return;}
-    if(!/^[АВЕКМНОРСТУХ]\\d{3}[АВЕКМНОРСТУХ]{2}$/.test(plate)){notify("Введи номер в формате А777АА");return;}
-    if(!/^\\d{2,3}$/.test(region)){notify("Регион должен содержать 2–3 цифры");return;}
+    if(!/^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}$/.test(plate)){notify("Введи номер в формате А777АА");return;}
+    if(!/^\d{2,3}$/.test(region)){notify("Регион должен содержать 2–3 цифры");return;}
     if(!Number.isInteger(count)||count<1||count>100){notify("Количество попыток: от 1 до 100");return;}
     const {error}=await supabase.rpc("admin_set_forced_number",{target_user_id:userId,forced_plate:plate,forced_region:region,spin_count:count});
     if(error){notify("Не удалось назначить номер: "+error.message);return;}
