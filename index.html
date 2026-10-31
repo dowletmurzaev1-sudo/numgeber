@@ -108,7 +108,8 @@
           <div id="admin-player-list" class="admin-player-list"><p class="admin-status">Нажми «Обновить список».</p></div>
         </section>
         <section class="admin-section" id="admin-odds" hidden>
-          <p class="admin-warning">Измени веса редкостей. Чем выше число, тем чаще выпадает этот уровень. Итоговые шансы автоматически нормализуются до 100%.</p>
+          <p class="admin-warning">Выбери игрока и настрой индивидуальные шансы выпадения редкостей. Чем выше вес, тем чаще выпадает уровень.</p>
+          <label class="admin-field">Игрок<select id="odds-player"><option value="">Сначала загрузи список игроков</option></select></label>
           <div id="odds-controls" class="odds-controls"></div>
           <div class="admin-actions"><button id="apply-odds" class="spin-button">Сохранить шансы</button><button id="reset-odds" class="text-button">Вернуть стандартные</button></div>
         </section>
@@ -126,6 +127,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261031-admin3"></script>
+  <script src="app.js?v=20261031-admin4"></script>
 </body>
 </html>
