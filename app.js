@@ -411,6 +411,7 @@
     try{await musicContext.resume();}catch(e){}
     if(musicMaster)musicMaster.gain.setTargetAtTime(musicVolume*0.12,musicContext.currentTime,0.15);
   }
+  document.addEventListener("pointerdown",()=>{if(musicEnabled&&!musicContext)startAmbientMusic();},{once:true});
   $("music-toggle").addEventListener("click",async()=>{
     musicEnabled=!musicEnabled;localStorage.setItem("nomgen-music-enabled",musicEnabled?"1":"0");
     if(musicEnabled)await startAmbientMusic();else stopAmbientMusic();
