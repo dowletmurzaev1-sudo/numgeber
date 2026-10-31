@@ -185,7 +185,7 @@
     $("win-tier").textContent=item.tier.toUpperCase();
     $("win-plate").textContent=item.plate;
     $("win-region").textContent=item.region;
-    $("win-pattern").textContent=item.pattern||"Особенная комбинация";
+    $("win-pattern").textContent=item.reason||item.pattern||"Особенная комбинация";
     const price=$("win-price");
     const target=item.value;
     const duration=1500,start=performance.now();
