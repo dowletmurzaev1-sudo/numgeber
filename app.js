@@ -426,7 +426,7 @@
         progressions[chord].forEach((hz,i)=>musicNodes[i]?.frequency.setTargetAtTime(hz,musicContext.currentTime,1.5));
       },8000);
       // Оригинальная лёгкая игровая мелодия с колокольчиковым тембром.
-      const melody=[[76,1],[79,1],[83,2],[81,1],[79,1],[76,2],[74,1],[76,1],[79,2],[83,1],[86,1],[83,2],[81,1],[79,1],[76,2],[74,1],[76,1],[79,1],[81,2],[79,1],[76,1],[74,2],[76,1],[79,1],[83,2],[86,1],[83,1],[81,2],[79,1],[76,1],[74,2],[76,2]];
+      const melody=[[79,1],[76,1],[74,1],[72,1],[74,1],[76,1],[79,2],[76,1],[74,1],[72,1],[74,1],[76,1],[74,1],[76,1],[79,2],[76,1],[79,1],[81,2],[76,1],[81,1],[79,2],[76,1],[74,1],[72,2]];
       let noteIndex=0;
       const playNote=()=>{
         if(!musicContext||musicContext.state==="closed")return;
@@ -540,7 +540,7 @@
     if(!supabase){$("auth-error").textContent="Supabase не настроен.";return;}
     $("google-login").disabled=true;$("auth-error").textContent="Переход к Google…";
     localStorage.setItem("nomgen-oauth-pending","1");
-    const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});
+    const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname,queryParams:{prompt:"select_account"}}});
     if(error){localStorage.removeItem("nomgen-oauth-pending");$("auth-error").textContent="Ошибка входа: "+error.message;$("google-login").disabled=false;}
   });
   async function logoutAccount(){
