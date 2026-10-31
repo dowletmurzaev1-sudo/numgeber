@@ -331,6 +331,8 @@
     host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(weights[i]||0)+'"><b>'+((total?weights[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
   }
   async function initGamePlatform(){
+    const onYandexHost=location.hostname.toLowerCase().includes("yandex.");
+    if(!onYandexHost){initSupabase();return;}
     try{
       if(window.nomgenYandexSdkReady) await window.nomgenYandexSdkReady;
       if(typeof YaGames!=="undefined"){
@@ -354,6 +356,8 @@
         $("auth-gate").hidden=true;
         $("google-login").hidden=true;
         $("guest-login").hidden=true;
+        $("logout-button").hidden=true;
+        $("profile-logout").hidden=true;
         document.body.classList.remove("auth-required");
         render();
         renderUpgrades();
