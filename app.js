@@ -13,6 +13,7 @@
   let yandexPlayer = null;
   let isYandexGames = false;
   let yandexSaveQueue = Promise.resolve();
+  let yandexFullscreenTimer = null;
   let adminUser = null;
   let currentUser = null;
   let playerReady = false;
@@ -238,12 +239,19 @@
   function resumeYandexGameplay(){
     ysdk?.features?.GameplayAPI?.start();
   }
+  function scheduleYandexFullscreenAd(){
+    if(!isYandexGames||!ysdk?.adv?.showFullscreenAdv)return;
+    clearTimeout(yandexFullscreenTimer);
+    // Интервал между полноэкранными показами — случайные 5–10 минут.
+    const delay=(5+Math.random()*5)*60*1000;
+    yandexFullscreenTimer=setTimeout(showYandexFullscreenAd,delay);
+  }
   function showYandexFullscreenAd(){
     if(!isYandexGames||!ysdk?.adv?.showFullscreenAdv)return;
     ysdk.adv.showFullscreenAdv({callbacks:{
       onOpen:()=>{stopAmbientMusic();ysdk.features?.GameplayAPI?.stop();},
-      onClose:()=>resumeYandexGameplay(),
-      onError:error=>{console.warn("Yandex fullscreen ad failed:",error);resumeYandexGameplay();}
+      onClose:()=>{resumeYandexGameplay();scheduleYandexFullscreenAd();},
+      onError:error=>{console.warn("Yandex fullscreen ad failed:",error);resumeYandexGameplay();scheduleYandexFullscreenAd();}
     }});
   }
   $("reward-ad-button").addEventListener("click",()=>{
@@ -293,7 +301,6 @@
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
         render();showWinAnimation(item);notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
-        if(isYandexGames&&state.spins%6===0)setTimeout(showYandexFullscreenAd,1100);
       }
     },60);
   }
@@ -398,6 +405,7 @@
         showGame();
         ysdk.features?.LoadingAPI?.ready();
         ysdk.features?.GameplayAPI?.start();
+        scheduleYandexFullscreenAd();
         ysdk.on?.("game_api_pause",()=>{stopAmbientMusic();ysdk.features?.GameplayAPI?.stop();});
         ysdk.on?.("game_api_resume",()=>{ysdk.features?.GameplayAPI?.start();});
         save();
