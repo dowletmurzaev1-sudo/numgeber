@@ -35,7 +35,7 @@
   function load(){
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if(saved && typeof saved.balance === "number" && Array.isArray(saved.collection) && Array.isArray(saved.sales)) return {...saved, spins:Number(saved.spins)||0, balance:Math.max(0,saved.balance), luckLevel:Math.min(5,Math.max(0,Number(saved.luckLevel)||0)), autoTapLevel:Math.min(3,Math.max(0,Number(saved.autoTapLevel)||0)), autoTapEnabled:Boolean(saved.autoTapEnabled)};
+      if(saved && typeof saved.balance === "number" && Array.isArray(saved.collection) && Array.isArray(saved.sales)) return {...saved, spins:Number(saved.spins)||0, balance:Math.max(0,saved.balance), luckLevel:Math.min(5,Math.max(0,Number(saved.luckLevel)||0))};
     } catch(e) {}
     return {balance:5000,collection:[],sales:[],spins:0,nextId:1,luckLevel:0};
   }
@@ -558,7 +558,7 @@
     $("result-info").className="result-info";
     $("player-name").value="Игрок";
     playerName="Игрок";avatarData="";localStorage.removeItem("nomgen-avatar");renderProfileButton();localStorage.setItem("nomgen-player-name",playerName);
-    render();renderUpgrades();showGame();configureAutoTap();
+    render();renderUpgrades();showGame();
   });
   $("google-login").addEventListener("click",async()=>{
     if(!supabase){$("auth-error").textContent="Supabase не настроен.";return;}
@@ -574,7 +574,7 @@
     }else{
       currentUser=null;adminUser=null;playerReady=false;loadingUserId=null;
       $("auth-gate").hidden=false;document.body.classList.add("auth-required");
-      $("spin-button").disabled=true;configureAutoTap();
+      $("spin-button").disabled=true;
     }
     $("profile-modal").hidden=true;$("settings-modal").hidden=true;
     $("admin-secret").hidden=true;$("admin-panel").hidden=true;
@@ -667,11 +667,11 @@
   $("upgrade-modal").addEventListener("click",e=>{if(e.target===$("upgrade-modal"))$("upgrade-modal").hidden=true;});
   $("home-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);window.scrollTo({top:0,behavior:"smooth"});});
   $("sort-select").addEventListener("change",render);
-  $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция, история и улучшения будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;state.autoTapLevel=0;state.autoTapEnabled=false;configureAutoTap();save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
+  $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция, история и улучшения будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
   $("player-name").value=playerName;
   render();
   renderUpgrades();
-  configureAutoTap();
+  
   renderProfileButton();
   initSupabase();
 })();
