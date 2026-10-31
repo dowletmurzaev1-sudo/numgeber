@@ -282,6 +282,10 @@
         $("auth-gate").hidden=false;
         document.body.classList.add("auth-required");
         $("spin-button").disabled=true;
+        const pending=localStorage.getItem("nomgen-oauth-pending")==="1";
+        $("auth-error").textContent=pending
+          ?"Google вернул тебя на сайт, но сессия не сохранилась. Проверь, что вход и возврат открываются в одном браузере, не в режиме инкогнито."
+          :"Сессия не найдена. Нажми «Войти через Google» для входа.";
       }
     }catch(error){
       console.error("Session initialization failed:",error);
