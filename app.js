@@ -37,17 +37,17 @@
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
     if(currentUser && supabase) {
       const rarest=[...state.collection].sort((a,b)=>tierRank(b.key)-tierRank(a.key)||b.value-a.value)[0]||null;
-      saveQueue=saveQueue.then(()=>supabase.from("nomgen_players").upsert({
-        user_id:currentUser.id,
-        display_name:playerName,
-        game_state:state,
-        rarest_plate:rarest?.plate||null,
-        rarest_region:rarest?.region||null,
-        rarest_tier:rarest?.tier||null,
-        rarest_value:rarest?.value||0,
-        rarity_rank:rarest?tierRank(rarest.key):0,
-        updated_at:new Date().toISOString()
-      },{onConflict:"user_id"})).then(({error})=>{if(error) console.error("Cloud save failed:",error.message);});
+      saveQueue=saveQueue.then(async()=>{
+        const saved=await supabase.from("nomgen_saves").upsert({user_id:currentUser.id,game_state:state,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+        if(saved.error) throw saved.error;
+        const profile=await supabase.from("nomgen_players").upsert({
+          user_id:currentUser.id,display_name:playerName,
+          rarest_plate:rarest?.plate||null,rarest_region:rarest?.region||null,
+          rarest_tier:rarest?.tier||null,rarest_value:rarest?.value||0,
+          rarity_rank:rarest?tierRank(rarest.key):0,updated_at:new Date().toISOString()
+        },{onConflict:"user_id"});
+        if(profile.error) throw profile.error;
+      }).catch(error=>console.error("Cloud save failed:",error.message));
     }
   }
   function tierRank(key){return ({common:1,rare:2,epic:3,mythic:4,legendary:5})[key]||0;}
@@ -59,11 +59,12 @@
   }
   async function loadPlayer(user){
     currentUser=user;
-    const {data,error}=await supabase.from("nomgen_players").select("*").eq("user_id",user.id).maybeSingle();
+    const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
     if(error){$("auth-error").textContent="Не удалось загрузить профиль: "+error.message;return;}
     if(data?.game_state && typeof data.game_state.balance==="number"){
       Object.assign(state,data.game_state);
-      playerName=data.display_name||user.user_metadata?.full_name||user.email?.split("@")[0]||"Игрок";
+      const {data:profile}=await supabase.from("nomgen_players").select("display_name").eq("user_id",user.id).maybeSingle();
+      playerName=profile?.display_name||user.user_metadata?.full_name||user.email?.split("@")[0]||"Игрок";
     }else{
       playerName=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок";
       await persistProfile();
@@ -77,8 +78,10 @@
   async function persistProfile(){
     if(!currentUser||!supabase)return;
     const rarest=[...state.collection].sort((a,b)=>tierRank(b.key)-tierRank(a.key)||b.value-a.value)[0]||null;
+    const saved=await supabase.from("nomgen_saves").upsert({user_id:currentUser.id,game_state:state,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+    if(saved.error){notify("Не удалось сохранить прогресс: "+saved.error.message);return;}
     const {error}=await supabase.from("nomgen_players").upsert({
-      user_id:currentUser.id,display_name:playerName,game_state:state,
+      user_id:currentUser.id,display_name:playerName,
       rarest_plate:rarest?.plate||null,rarest_region:rarest?.region||null,
       rarest_tier:rarest?.tier||null,rarest_value:rarest?.value||0,
       rarity_rank:rarest?tierRank(rarest.key):0,updated_at:new Date().toISOString()
