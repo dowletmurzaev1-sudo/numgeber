@@ -29,7 +29,7 @@
   const money = n => Math.round(n).toLocaleString("ru-RU") + " ₽";
   const state = load();
   let toastTimer;
-  let musicContext=null, musicMaster=null, musicNodes=[], musicTimer=null;
+  let musicContext=null, musicMaster=null, musicNodes=[], musicTimer=null, musicMelodyTimer=null;
   let musicEnabled=localStorage.getItem("nomgen-music-enabled")==="1";
   let musicVolume=Math.max(0,Math.min(1,Number(localStorage.getItem("nomgen-music-volume")??0.35)));
   function load(){
@@ -290,6 +290,7 @@
       }
       if(event==="SIGNED_OUT"){
         currentUser=null;adminUser=null;playerReady=false;loadingUserId=null;
+        $("profile-modal").hidden=true;$("settings-modal").hidden=true;
         $("admin-secret").hidden=true;$("admin-panel").hidden=true;$("admin-content").hidden=true;
         $("auth-gate").hidden=false;
         document.body.classList.add("auth-required");
@@ -382,6 +383,7 @@
   }
   function stopAmbientMusic(){
     if(musicTimer){clearInterval(musicTimer);musicTimer=null;}
+    if(musicMelodyTimer){clearInterval(musicMelodyTimer);musicMelodyTimer=null;}
     musicNodes.forEach(node=>{try{node.stop();}catch(e){}});
     musicNodes=[];musicMaster=null;
     if(musicContext){musicContext.close().catch(()=>{});musicContext=null;}
@@ -392,21 +394,34 @@
     if(!musicContext){
       musicContext=new AudioCtx();
       musicMaster=musicContext.createGain();musicMaster.gain.value=musicVolume*0.12;musicMaster.connect(musicContext.destination);
-      const filter=musicContext.createBiquadFilter();filter.type="lowpass";filter.frequency.value=850;filter.connect(musicMaster);
-      const notes=[130.81,164.81,196,261.63];
+      const filter=musicContext.createBiquadFilter();filter.type="lowpass";filter.frequency.value=1800;filter.connect(musicMaster);
+      const notes=[164.81,207.65,246.94,329.63];
       notes.forEach((hz,i)=>{
         const osc=musicContext.createOscillator(),gain=musicContext.createGain();
-        osc.type="sine";osc.frequency.value=hz;
-        gain.gain.value=[0.32,0.2,0.16,0.1][i];
+        osc.type="sine";osc.frequency.value=hz;gain.gain.value=[0.18,0.12,0.1,0.07][i];
         osc.connect(gain);gain.connect(filter);osc.start();musicNodes.push(osc);
       });
       let chord=0;
-      const progressions=[[130.81,164.81,196,261.63],[110,146.83,174.61,220],[98,130.81,164.81,196],[116.54,146.83,174.61,233.08]];
+      const progressions=[[164.81,207.65,246.94,329.63],[146.83,185,220,293.66],[130.81,164.81,196,261.63],[146.83,185,220,293.66]];
       musicTimer=setInterval(()=>{
         if(!musicContext)return;
         chord=(chord+1)%progressions.length;
-        progressions[chord].forEach((hz,i)=>musicNodes[i]?.frequency.setTargetAtTime(hz,musicContext.currentTime,1.8));
-      },6500);
+        progressions[chord].forEach((hz,i)=>musicNodes[i]?.frequency.setTargetAtTime(hz,musicContext.currentTime,1.5));
+      },8000);
+      // «Утро» Эдварда Грига (Peer Gynt): синтезированная мелодия по мотивам общественного достояния.
+      const melody=[[71,1],[73,1],[76,2],[78,1],[76,1],[73,2],[71,1],[73,1],[76,2],[78,1],[80,1],[78,2],[76,1],[73,1],[71,2],[69,1],[71,1],[73,2],[76,1],[78,1],[80,2],[78,1],[76,1],[73,2],[71,1],[73,1],[76,2],[73,1],[71,1],[69,2],[71,2],[76,2]];
+      let noteIndex=0;
+      const playNote=()=>{
+        if(!musicContext||musicContext.state==="closed")return;
+        const [midi,beats]=melody[noteIndex],now=musicContext.currentTime;
+        const osc=musicContext.createOscillator(),gain=musicContext.createGain();
+        osc.type="sine";osc.frequency.value=440*Math.pow(2,(midi-69)/12);
+        gain.gain.setValueAtTime(0.0001,now);gain.gain.linearRampToValueAtTime(0.22,now+0.08);
+        gain.gain.setTargetAtTime(0.0001,now+beats*0.48,0.16);
+        osc.connect(gain);gain.connect(filter);osc.start(now);osc.stop(now+beats*0.48+0.7);
+        noteIndex=(noteIndex+1)%melody.length;
+      };
+      playNote();musicMelodyTimer=setInterval(playNote,480);
     }
     try{await musicContext.resume();}catch(e){}
     if(musicMaster)musicMaster.gain.setTargetAtTime(musicVolume*0.12,musicContext.currentTime,0.15);
@@ -511,7 +526,20 @@
     const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});
     if(error){localStorage.removeItem("nomgen-oauth-pending");$("auth-error").textContent="Ошибка входа: "+error.message;$("google-login").disabled=false;}
   });
-  $("logout-button").addEventListener("click",async()=>{if(supabase)await supabase.auth.signOut();});
+  async function logoutAccount(){
+    if(currentUser&&supabase){
+      const {error}=await supabase.auth.signOut();
+      if(error){notify("Не удалось выйти: "+error.message);return;}
+    }else{
+      currentUser=null;adminUser=null;playerReady=false;loadingUserId=null;
+      $("auth-gate").hidden=false;document.body.classList.add("auth-required");
+      $("spin-button").disabled=true;configureAutoTap();
+    }
+    $("profile-modal").hidden=true;$("settings-modal").hidden=true;
+    $("admin-secret").hidden=true;$("admin-panel").hidden=true;
+  }
+  $("logout-button").addEventListener("click",logoutAccount);
+  $("profile-logout").addEventListener("click",logoutAccount);
   $("spin-button").addEventListener("click",spin);
   $("save-player").addEventListener("click",async()=>{
     const name=$("player-name").value.trim().slice(0,20);
