@@ -27,9 +27,9 @@
     <a class="brand" href="#" aria-label="НомГен — главная"><span class="brand-mark">Н</span><span>НОМ<span class="accent">ГЕН</span><small>КОЛЛЕКЦИОНЕР НОМЕРОВ</small></span></a>
     <div class="top-stats">
       <div class="stat"><span class="stat-icon">₽</span><div><small>ВАШ БАЛАНС</small><strong id="balance">5 000 ₽</strong></div></div>
-      <div class="stat"><span class="stat-icon collection-icon">▤</span><div><small>В КОЛЛЕКЦИИ</small><strong id="collection-count">0 номеров</strong></div></div>
+      <button id="collection-open" class="stat collection-open" type="button" aria-label="Открыть коллекцию"><span class="stat-icon collection-icon">▤</span><span><small>В КОЛЛЕКЦИИ</small><strong id="collection-count">0 номеров</strong></span></button>
     </div>
-    <button id="profile-button" class="profile-button" aria-label="Открыть профиль"><span id="profile-avatar" class="profile-avatar"><span>И</span></span><span class="profile-button-label">Профиль</span></button>
+    <button id="settings-open" class="settings-open" type="button" aria-label="Настройки">⚙</button><button id="profile-button" class="profile-button" aria-label="Открыть профиль"><span id="profile-avatar" class="profile-avatar"><span>И</span></span><span class="profile-button-label">Профиль</span></button>
   </header>
   <div id="auth-success" class="auth-success" role="status" aria-live="polite" hidden></div>
   <div id="profile-modal" class="profile-modal" hidden>
@@ -43,6 +43,55 @@
       <label class="profile-name-label" for="profile-name">Имя игрока</label>
       <input id="profile-name" class="profile-name-input" maxlength="20" placeholder="Имя игрока">
       <button id="profile-save" class="profile-save" type="button">Сохранить</button>
+    </section>
+  </div>
+  <div id="settings-modal" class="feature-modal" hidden>
+    <section class="feature-card settings-window" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <button class="feature-close" id="settings-close" aria-label="Закрыть">×</button>
+      <h2 id="settings-title">Настройки и улучшения</h2>
+      <div class="upgrade-grid">
+        <article class="upgrade-card">
+          <span class="section-kicker">УЛУЧШЕНИЕ</span>
+          <h3>Удача <strong id="luck-level">×1</strong></h3>
+          <p id="luck-description">Повышает шанс редких номеров.</p>
+          <button id="buy-luck" class="upgrade-buy">Улучшить · 10 000 ₽</button>
+        </article>
+        <article class="upgrade-card">
+          <span class="section-kicker">УЛУЧШЕНИЕ</span>
+          <h3>Автотап <strong id="autotap-level">1,00 сек.</strong></h3>
+          <p id="autotap-description">Автоматически запускает генератор.</p>
+          <button id="toggle-autotap" class="upgrade-toggle">Включить автотап</button>
+          <button id="buy-autotap" class="upgrade-buy">Ускорить · 1 000 000 ₽</button>
+        </article>
+      </div>
+      <button id="admin-secret" class="admin-secret">95</button>
+      <section class="panel admin-panel" id="admin-panel" hidden>
+        <div class="panel-heading"><div><span class="section-kicker">УПРАВЛЕНИЕ ИГРОЙ</span><h2>Админ-панель</h2></div><button id="admin-toggle" class="text-button">Открыть</button></div>
+        <div id="admin-content" hidden>
+          <nav class="admin-tabs" aria-label="Разделы админ-панели">
+            <button class="admin-tab active" data-admin-tab="players">Игроки</button>
+            <button class="admin-tab" data-admin-tab="odds">Шансы</button>
+            <button class="admin-tab" data-admin-tab="money">Изменить деньги</button>
+          </nav>
+          <section class="admin-section" id="admin-players">
+            <div class="admin-actions"><button id="refresh-admin-players" class="text-button">Обновить список</button></div>
+            <div id="admin-player-list" class="admin-player-list"><p class="admin-status">Нажми «Обновить список».</p></div>
+          </section>
+          <section class="admin-section" id="admin-odds" hidden>
+            <p class="admin-warning">Выбери игрока и настрой индивидуальные шансы выпадения редкостей. Чем выше вес, тем чаще выпадает уровень.</p>
+            <label class="admin-field">Игрок<select id="odds-player"><option value="">Сначала загрузи список игроков</option></select></label>
+            <div id="odds-controls" class="odds-controls"></div>
+            <div class="admin-actions"><button id="apply-odds" class="spin-button">Сохранить шансы</button><button id="reset-odds" class="text-button">Вернуть стандартные</button></div>
+          </section>
+          <section class="admin-section" id="admin-money" hidden>
+            <label class="admin-field">Игрок<select id="money-player"><option value="">Сначала загрузи список игроков</option></select></label>
+            <label class="admin-field">Новый баланс, ₽<input id="money-balance" type="number" min="0" step="1" value="5000"></label>
+            <button id="save-player-balance" class="spin-button">Сохранить баланс</button>
+            <p class="admin-status">Баланс изменится в облачном сохранении выбранного игрока.</p>
+          </section>
+          <p id="odds-status" class="admin-status">Настройки доступны только администратору.</p>
+        </div>
+      </section>
     </section>
   </div>
 
@@ -79,11 +128,17 @@
       </aside>
     </section>
 
-    <section class="panel collection-panel">
+    <div id="collection-modal" class="feature-modal" hidden>
+      <section class="feature-card collection-window" role="dialog" aria-modal="true" aria-labelledby="collection-window-title">
+        <button class="feature-close" id="collection-close" aria-label="Закрыть">×</button>
+        <h2 id="collection-window-title">Моя коллекция</h2>
+        <section class="panel collection-panel">
       <div class="panel-heading collection-heading"><div><span class="section-kicker">ТВОИ СОКРОВИЩА</span><h2>Коллекция <span class="count-badge" id="collection-badge">0</span></h2></div><div class="collection-tools"><select id="sort-select" aria-label="Сортировка коллекции"><option value="new">Сначала новые</option><option value="price">Сначала дорогие</option><option value="rarity">По редкости</option></select><button class="text-button" id="sell-duplicates" title="Продать все повторные номера">Продать дубликаты</button></div></div>
       <div class="empty-state" id="empty-state"><div class="empty-icon">▤</div><strong>Коллекция пока пуста</strong><span>Первый номер уже ждёт тебя в генераторе</span></div>
       <div class="collection-grid" id="collection-grid"></div>
     </section>
+      </section>
+    </div>
 
     <section class="panel history-panel">
       <div class="panel-heading"><div><span class="section-kicker">ФИНАНСОВЫЙ ЖУРНАЛ</span><h2>История продаж</h2></div><span class="history-count" id="sales-count">0 операций</span></div>
@@ -94,33 +149,6 @@
       <div class="player-entry"><label for="player-name">Имя игрока</label><input id="player-name" maxlength="20" placeholder="Введи свой ник"><button id="save-player" class="text-button">Сохранить профиль</button><button id="logout-button" class="text-button">Выйти</button></div>
       <p class="leaderboard-note">Публичный рейтинг: показывается самый редкий номер каждого игрока и его стоимость.</p>
       <div class="leaderboard-refresh" id="leaderboard-refresh">Обновление через 60 сек.</div><div id="leaderboard" class="leaderboard-list"><div class="history-empty">Стань первым участником рейтинга</div></div>
-    </section>
-    <section class="panel admin-panel">
-      <div class="panel-heading"><div><span class="section-kicker">УПРАВЛЕНИЕ ИГРОЙ</span><h2>Админ-панель</h2></div><button id="admin-toggle" class="text-button">Открыть</button></div>
-      <div id="admin-content" hidden>
-        <nav class="admin-tabs" aria-label="Разделы админ-панели">
-          <button class="admin-tab active" data-admin-tab="players">Игроки</button>
-          <button class="admin-tab" data-admin-tab="odds">Шансы</button>
-          <button class="admin-tab" data-admin-tab="money">Изменить деньги</button>
-        </nav>
-        <section class="admin-section" id="admin-players">
-          <div class="admin-actions"><button id="refresh-admin-players" class="text-button">Обновить список</button></div>
-          <div id="admin-player-list" class="admin-player-list"><p class="admin-status">Нажми «Обновить список».</p></div>
-        </section>
-        <section class="admin-section" id="admin-odds" hidden>
-          <p class="admin-warning">Выбери игрока и настрой индивидуальные шансы выпадения редкостей. Чем выше вес, тем чаще выпадает уровень.</p>
-          <label class="admin-field">Игрок<select id="odds-player"><option value="">Сначала загрузи список игроков</option></select></label>
-          <div id="odds-controls" class="odds-controls"></div>
-          <div class="admin-actions"><button id="apply-odds" class="spin-button">Сохранить шансы</button><button id="reset-odds" class="text-button">Вернуть стандартные</button></div>
-        </section>
-        <section class="admin-section" id="admin-money" hidden>
-          <label class="admin-field">Игрок<select id="money-player"><option value="">Сначала загрузи список игроков</option></select></label>
-          <label class="admin-field">Новый баланс, ₽<input id="money-balance" type="number" min="0" step="1" value="5000"></label>
-          <button id="save-player-balance" class="spin-button">Сохранить баланс</button>
-          <p class="admin-status">Баланс изменится в облачном сохранении выбранного игрока.</p>
-        </section>
-        <p id="odds-status" class="admin-status">Настройки доступны только администратору.</p>
-      </div>
     </section>
     <footer><span class="footer-brand">НОМГЕН</span><span>Крути. Собирай. Богатей. Найди номер мечты!</span><button id="reset-game" class="reset-button">Сбросить прогресс</button></footer>
   </main>
