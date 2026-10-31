@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101319">
+  <meta name="description" content="НомГен — симулятор коллекционера автомобильных номеров. Крути. Собирай. Богатей.">
+  <title>НомГен — коллекционер номеров</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Russo+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="НомГен — главная"><span class="brand-mark">Н</span><span>НОМ<span class="accent">ГЕН</span><small>КОЛЛЕКЦИОНЕР НОМЕРОВ</small></span></a>
+    <div class="top-stats">
+      <div class="stat"><span class="stat-icon">₽</span><div><small>ВАШ БАЛАНС</small><strong id="balance">5 000 ₽</strong></div></div>
+      <div class="stat"><span class="stat-icon collection-icon">▤</span><div><small>В КОЛЛЕКЦИИ</small><strong id="collection-count">0 номеров</strong></div></div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-copy"><div class="eyebrow"><span class="live-dot"></span> СИМУЛЯТОР КОЛЛЕКЦИОНЕРА</div>
+        <h1>НАЙДИ СВОЙ<br><span>НОМЕР МЕЧТЫ</span></h1>
+        <p>Охоться за красивыми комбинациями. Собирай редкие номера, продавай находки и создай коллекцию, которой позавидуют.</p>
+        <div class="hero-tags"><span>01 / КРУТИ</span><span>02 / СОБИРАЙ</span><span>03 / БОГАТЕЙ</span></div>
+      </div>
+      <div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="hero-plate"><span class="plate-region">RUS</span><strong>А777АА</strong><b>777</b></div><div class="spark spark-a">✦</div><div class="spark spark-b">✧</div><div class="hero-glow"></div></div>
+    </section>
+
+    <section class="game-grid">
+      <div class="panel generator-panel">
+        <div class="panel-heading"><div><span class="section-kicker">ГЛАВНОЕ ДЕЙСТВИЕ</span><h2>Генератор номеров</h2></div><span class="price-pill">−500 ₽ / попытка</span></div>
+        <div class="machine">
+          <div class="machine-top"><span>ГОСЗНАК • РФ</span><span class="machine-lights"><i></i><i></i><i></i></span></div>
+          <div class="plate-wrap" id="plate-wrap"><div class="license-plate" id="license-plate"><span class="plate-main" id="plate-main">А000АА</span><span class="plate-region-big" id="plate-region">77</span><span class="plate-rus">RUS<br><b>▦</b></span></div></div>
+          <div class="result-info"><span class="rarity-label" id="rarity-label">ГОТОВ К РОЗЫГРЫШУ</span><strong id="result-value">Твоя следующая находка?</strong><small id="result-hint">Нажми кнопку, чтобы запустить генератор</small></div>
+          <button class="spin-button" id="spin-button"><span class="spin-symbol">⟳</span><span>КРУТИТЬ ГЕНЕРАТОР</span><b>500 ₽</b></button>
+          <div class="odds-note">Шанс легендарного номера — 0,5%. Удача любит смелых.</div>
+        </div>
+      </div>
+
+      <aside class="panel stats-panel">
+        <div class="panel-heading"><div><span class="section-kicker">ТВОЙ ПРОГРЕСС</span><h2>Статистика</h2></div><span class="trophy">✧</span></div>
+        <div class="stat-cards">
+          <div class="mini-stat"><span>Общая стоимость</span><strong id="total-value">0 ₽</strong><small>оценка коллекции</small></div>
+          <div class="mini-stat"><span>Самая дорогая находка</span><strong id="best-number">—</strong><small id="best-value">пока нет номеров</small></div>
+          <div class="mini-stat"><span>Всего попыток</span><strong id="spins-count">0</strong><small>запусков генератора</small></div>
+        </div>
+        <div class="rarity-progress"><div class="progress-title"><span>Редкость коллекции</span><span id="rarity-progress-label">0 / 5</span></div><div class="rarity-dots"><i data-tier="Обычный"></i><i data-tier="Редкий"></i><i data-tier="Эпический"></i><i data-tier="Мифический"></i><i data-tier="Легендарный"></i></div></div>
+      </aside>
+    </section>
+
+    <section class="panel collection-panel">
+      <div class="panel-heading collection-heading"><div><span class="section-kicker">ТВОИ СОКРОВИЩА</span><h2>Коллекция <span class="count-badge" id="collection-badge">0</span></h2></div><div class="collection-tools"><select id="sort-select" aria-label="Сортировка коллекции"><option value="new">Сначала новые</option><option value="price">Сначала дорогие</option><option value="rarity">По редкости</option></select><button class="text-button" id="sell-duplicates" title="Продать все повторные номера">Продать дубликаты</button></div></div>
+      <div class="empty-state" id="empty-state"><div class="empty-icon">▤</div><strong>Коллекция пока пуста</strong><span>Первый номер уже ждёт тебя в генераторе</span></div>
+      <div class="collection-grid" id="collection-grid"></div>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="panel-heading"><div><span class="section-kicker">ФИНАНСОВЫЙ ЖУРНАЛ</span><h2>История продаж</h2></div><span class="history-count" id="sales-count">0 операций</span></div>
+      <div class="history-list" id="history-list"><div class="history-empty">Здесь появятся твои сделки</div></div>
+    </section>
+    <footer><span class="footer-brand">НОМГЕН</span><span>Крути. Собирай. Богатей. Найди номер мечты!</span><button id="reset-game" class="reset-button">Сбросить прогресс</button></footer>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
