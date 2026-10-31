@@ -109,9 +109,22 @@
     <section class="panel leaderboard-panel"><div class="panel-heading"><div><span class="section-kicker">СОСТЯЗАНИЕ</span><h2>Лидерборд игроков</h2></div><span class="trophy">🏆</span></div><div class="player-entry"><label for="player-name">Имя игрока</label><input id="player-name" maxlength="20" placeholder="Введи свой ник"><button id="save-player" class="text-button">Сохранить профиль</button><button id="logout-button" class="text-button">Выйти</button></div><p class="leaderboard-note">Публичный рейтинг: показывается самый редкий номер каждого игрока и его стоимость.</p><div class="leaderboard-refresh" id="leaderboard-refresh">Обновление через 60 сек.</div><div id="leaderboard" class="leaderboard-list"><div class="history-empty">Стань первым участником рейтинга</div></div></section>
     <footer><span class="footer-brand">НОМГЕН</span><span>Крути. Собирай. Богатей. Найди номер мечты!</span><button id="reset-game" class="reset-button">Сбросить прогресс</button></footer>
   </main>
+  <div id="win-overlay" class="win-overlay" role="dialog" aria-modal="true" aria-label="Редкая находка">
+    <div class="win-card">
+      <button id="win-close" class="win-close" aria-label="Закрыть">×</button>
+      <div class="win-sparkles" aria-hidden="true">✦　✧　✦</div>
+      <span class="win-caption">НОВАЯ НАХОДКА</span>
+      <strong id="win-tier" class="win-tier">РЕДКИЙ</strong>
+      <div class="win-license"><strong id="win-plate">А777АА</strong><span id="win-region">77</span><small>RUS</small></div>
+      <div id="win-pattern" class="win-pattern"></div>
+      <span class="win-price-caption">ОЦЕНОЧНАЯ СТОИМОСТЬ</span>
+      <strong id="win-price" class="win-price">0 ₽</strong>
+      <span class="win-added">НОМЕР ДОБАВЛЕН В КОЛЛЕКЦИЮ</span>
+    </div>
+  </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261031-morning-mood-account-picker"></script>
+  <script src="app.js?v=20261031-pattern-rarity-reveal"></script>
 </body>
 </html>
