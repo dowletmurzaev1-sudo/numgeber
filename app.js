@@ -64,9 +64,9 @@
     if(data?.game_state && typeof data.game_state.balance==="number"){
       Object.assign(state,data.game_state);
       const {data:profile}=await supabase.from("nomgen_players").select("display_name").eq("user_id",user.id).maybeSingle();
-      playerName=profile?.display_name||user.user_metadata?.full_name||user.email?.split("@")[0]||"Игрок";
+      playerName=(profile?.display_name||user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок").slice(0,20);
     }else{
-      playerName=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок";
+      playerName=(user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок").slice(0,20);
       await persistProfile();
     }
     localStorage.setItem("nomgen-player-name",playerName);
