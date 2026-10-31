@@ -191,7 +191,7 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare normalized_plate text := upper(regexp_replace(coalesce(forced_plate,''),'\\s','','g'));
+declare normalized_plate text := upper(regexp_replace(coalesce(forced_plate,''),'[[:space:]]','','g'));
 begin
   if not exists (select 1 from public.nomgen_admins a where a.user_id=(select auth.uid())) then
     raise exception 'Недостаточно прав администратора';
