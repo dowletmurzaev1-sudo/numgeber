@@ -273,9 +273,16 @@
         document.body.classList.add("auth-required");
         $("spin-button").disabled=true;
         const pending=localStorage.getItem("nomgen-oauth-pending")==="1";
-        $("auth-error").textContent=pending
-          ?"Google вернул тебя на сайт, но сессия не сохранилась. Проверь, что вход и возврат открываются в одном браузере, не в режиме инкогнито."
-          :"Сессия не найдена. Нажми «Войти через Google» для входа.";
+        const callbackUrl=new URL(window.location.href);
+        const oauthError=callbackUrl.searchParams.get("error_description")||callbackUrl.searchParams.get("error")||new URLSearchParams(window.location.hash.slice(1)).get("error_description")||new URLSearchParams(window.location.hash.slice(1)).get("error");
+        const hasCode=callbackUrl.searchParams.has("code");
+        $("auth-error").textContent=oauthError
+          ?"Ошибка OAuth: "+decodeURIComponent(oauthError.replace(/\\+/g," "))
+          :hasCode
+            ?"Google вернул код, но Supabase не завершил вход. Возможно, не сохранился ключ подтверждения входа (PKCE)."
+            :pending
+              ?"Google вернул тебя на сайт, но сессия не сохранилась. Проверь настройки Redirect URLs в Supabase."
+              :"Сессия не найдена. Нажми «Войти через Google» для входа.";
       }
     }catch(error){
       console.error("Session initialization failed:",error);
