@@ -2,6 +2,13 @@
   "use strict";
   const COST = 500;
   const STORAGE_KEY = "nomgen-save-v1";
+  const ADMIN_PIN = "NOMG3N-ADMIN"; // Измени этот код перед публикацией сайта.
+  const ODDS_KEY = "nomgen-odds-v1";
+  const PLAYERS_KEY = "nomgen-players-v1";
+  const DEFAULT_WEIGHTS = [69.5,22,7,1.5,.5];
+  let weights = loadWeights();
+  let players = loadPlayers();
+  let playerName = localStorage.getItem("nomgen-player-name") || "Игрок";
   const letters = ["А","В","Е","К","М","Н","О","Р","С","Т","У","Х"];
   const regions = ["77","97","99","177","197","199","777","50","90","150","750","78","98","178","198","23","93","123","116","716","02","102","54","154","66","96","196","74","174","52","152","63","163","61","161"];
   const tiers = [
@@ -108,6 +115,26 @@
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
   $("spin-button").addEventListener("click",spin);
+  $("save-player").addEventListener("click",()=>{
+    const name=$("player-name").value.trim().slice(0,20);
+    if(!name){notify("Введи имя игрока");return;}
+    playerName=name;localStorage.setItem("nomgen-player-name",playerName);render();notify("Профиль сохранён");
+  });
+  $("admin-toggle").addEventListener("click",()=>{
+    const panel=$("admin-content");
+    if(!panel.hidden){panel.hidden=true;$("admin-toggle").textContent="Открыть";return;}
+    const pin=prompt("Введите код администратора:");
+    if(pin!==ADMIN_PIN){notify("Неверный код администратора");return;}
+    panel.hidden=false;$("admin-toggle").textContent="Закрыть";renderOdds();
+  });
+  $("apply-odds").addEventListener("click",()=>{
+    const next=Array.from(document.querySelectorAll("[data-odds]"),el=>Math.max(0,Number(el.value)||0));
+    if(next.every(x=>x===0)){notify("Хотя бы один шанс должен быть больше нуля");return;}
+    weights=next;localStorage.setItem(ODDS_KEY,JSON.stringify(weights));renderOdds();$("odds-status").textContent="Шансы сохранены. Они применяются к следующим попыткам.";notify("Шансы обновлены");
+  });
+  $("reset-odds").addEventListener("click",()=>{
+    weights=[...DEFAULT_WEIGHTS];localStorage.setItem(ODDS_KEY,JSON.stringify(weights));renderOdds();$("odds-status").textContent="Стандартные шансы восстановлены.";notify("Шансы сброшены");
+  });
   $("collection-grid").addEventListener("click",e=>{const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
   $("sort-select").addEventListener("change",render);
