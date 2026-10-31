@@ -226,7 +226,7 @@
       $("admin-toggle").disabled=true;return;
     }
     supabase=window.supabase.createClient(cfg.url,cfg.anonKey,{
-      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"}
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,flowType:"pkce"}
     });
     // Слушатель авторизации регистрируется до любых сетевых запросов.
     supabase.auth.onAuthStateChange((event,session)=>{
@@ -246,6 +246,16 @@
       }
     });
     try{
+      // На мобильных браузерах явно обмениваем OAuth-код на сессию.
+      // Автоматическое обнаружение кода отключено выше, чтобы обмен не запускался дважды.
+      const callbackUrl=new URL(window.location.href);
+      const oauthCode=callbackUrl.searchParams.get("code");
+      if(oauthCode){
+        const {error:exchangeError}=await supabase.auth.exchangeCodeForSession(oauthCode);
+        if(exchangeError)throw exchangeError;
+        callbackUrl.searchParams.delete("code");
+        window.history.replaceState({},document.title,callbackUrl.pathname+callbackUrl.search+callbackUrl.hash);
+      }
       const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
       if(sessionError)throw sessionError;
       if(sessionData?.session?.user){
