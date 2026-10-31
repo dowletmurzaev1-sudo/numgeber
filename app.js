@@ -6,6 +6,7 @@
   const PLAYERS_KEY = "nomgen-players-v1";
   const DEFAULT_WEIGHTS = [69.5,22,7,1.5,.5];
   let weights = [...DEFAULT_WEIGHTS];
+  let hasCustomWeights = false;
   let players = [];
   let supabase = null;
   let adminUser = null;
@@ -73,7 +74,7 @@
       const {data:isAdmin,error:adminError}=await supabase.rpc("is_nomgen_admin");
       if(!adminError&&isAdmin){adminUser=user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}
       const {data:userWeights,error:weightsError}=await supabase.rpc("get_my_rare_weights");
-      if(!weightsError&&Array.isArray(userWeights)&&userWeights.length===5&&userWeights.some(x=>Number(x)>0))weights=userWeights.map(Number);
+      if(!weightsError&&Array.isArray(userWeights)&&userWeights.length===5&&userWeights.some(x=>Number(x)>0)){weights=userWeights.map(Number);hasCustomWeights=true;}
       const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
       if(error)throw error;
       if(data?.game_state && typeof data.game_state.balance==="number"){
@@ -285,10 +286,10 @@
     // Настройки и рейтинг загружаются отдельно — их ошибки не блокируют вход.
     try{
       const {data,error}=await supabase.from("nomgen_settings").select("weights").eq("id",1).single();
-      if(!error&&Array.isArray(data?.weights)&&data.weights.length===5&&data.weights.some(x=>Number(x)>0)){weights=data.weights.map(Number);renderOdds();}
+      if(!error&&Array.isArray(data?.weights)&&data.weights.length===5&&data.weights.some(x=>Number(x)>0)&&!currentUser){weights=data.weights.map(Number);renderOdds();}
       else $("odds-status").textContent="Ошибка загрузки глобальных шансов: "+(error?.message||"проверь SQL");
       supabase.channel("nomgen-global-settings").on("postgres_changes",{event:"UPDATE",schema:"public",table:"nomgen_settings",filter:"id=eq.1"},payload=>{
-        if(Array.isArray(payload.new.weights)){weights=payload.new.weights.map(Number);renderOdds();}
+        if(Array.isArray(payload.new.weights)&&!currentUser){weights=payload.new.weights.map(Number);renderOdds();}
       }).subscribe();
     }catch(error){console.warn("Global settings unavailable:",error);}
   }
@@ -421,6 +422,7 @@
     if(!userId||!Number.isSafeInteger(balance)||balance<0){notify("Введи целый баланс от 0 ₽");return;}
     const {error}=await supabase.rpc("admin_set_player_balance",{target_user_id:userId,new_balance:balance});
     if(error){notify("Не удалось изменить баланс: "+error.message);return;}
+    if(userId===currentUser?.id){state.balance=balance;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render();}
     notify("Баланс игрока обновлён");await loadAdminPlayers();await refreshLeaderboard();
   });
   $("odds-player").addEventListener("change",async()=>{
