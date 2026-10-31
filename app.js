@@ -17,7 +17,7 @@
     {name:"Редкий",key:"rare",weight:22,min:900,max:1800,color:"#56a8ff"},
     {name:"Эпический",key:"epic",weight:7,min:3000,max:7000,color:"#b78aff"},
     {name:"Мифический",key:"mythic",weight:1.5,min:12000,max:30000,color:"#ff9c54"},
-    {name:"Легендарный",key:"legendary",weight:.5,min:50000,max:150000,color:"#f4d16d"}
+    {name:"Легендарный",key:"legendary",weight:.5,min:15000000,max:50000000,color:"#f4d16d"}
   ];
   const $ = id => document.getElementById(id);
   const money = n => Math.round(n).toLocaleString("ru-RU") + " ₽";
@@ -48,11 +48,23 @@
   }
   function makeNumber(){
     const tier=chooseTier();
-    let digits=String(Math.floor(Math.random()*1000)).padStart(3,"0");
-    let chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]);
+    let digits, chars, region;
+    if(tier.key==="legendary"){
+      // Легендарные находки — только узнаваемые «зеркальные» номера с тройными цифрами и буквами.
+      const premiumDigits=["777","888","999","111","222","333","555"];
+      const premiumLetters=["А","М","О","Х","Т","Е","К","С"];
+      const letter=premiumLetters[Math.floor(Math.random()*premiumLetters.length)];
+      digits=premiumDigits[Math.floor(Math.random()*premiumDigits.length)];
+      chars=[letter,letter,letter];
+      region=["77","97","99","177","197","199","777"][Math.floor(Math.random()*7)];
+    }else{
+      digits=String(Math.floor(Math.random()*1000)).padStart(3,"0");
+      chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]);
+      region=regions[Math.floor(Math.random()*regions.length)].trim();
+    }
     const score=patternScore(digits,chars);
-    let region=regions[Math.floor(Math.random()*regions.length)].trim();
     let value=Math.round((tier.min+Math.random()*(tier.max-tier.min))*(1+score*.12)/50)*50;
+    if(tier.key==="legendary") value=Math.max(15000000,value);
     return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now()};
   }
   function notify(message){const el=$("toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2400);}
