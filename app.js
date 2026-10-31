@@ -71,7 +71,7 @@
     renderProfileButton();
     try{
       const {data:isAdmin,error:adminError}=await supabase.rpc("is_nomgen_admin");
-      if(!adminError&&isAdmin){adminUser=user;$("admin-content").hidden=false;renderOdds();}
+      if(!adminError&&isAdmin){adminUser=user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}
       const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
       if(error)throw error;
       if(data?.game_state && typeof data.game_state.balance==="number"){
@@ -111,12 +111,20 @@
     if(error)notify("Не удалось сохранить профиль: "+error.message);
     else await refreshLeaderboard();
   }
+  let leaderboardNextRefresh=Date.now()+60000;
   async function refreshLeaderboard(){
     if(!supabase)return;
+    leaderboardNextRefresh=Date.now()+60000;
     const {data,error}=await supabase.from("nomgen_players").select("user_id,display_name,rarest_plate,rarest_region,rarest_tier,rarest_value,rarity_rank").order("rarity_rank",{ascending:false}).order("rarest_value",{ascending:false}).limit(100);
     if(error){$("leaderboard").innerHTML='<div class="history-empty">Не удалось загрузить рейтинг: '+error.message+'</div>';return;}
     $("leaderboard").innerHTML=data?.length?data.map((p,i)=>'<div class="leader-row"><span class="leader-rank">'+(i+1)+'</span><div class="leader-details"><strong>'+escapeHtml(p.display_name||"Игрок")+'</strong><small>'+(p.rarest_plate?escapeHtml(p.rarest_tier)+" · "+escapeHtml(p.rarest_plate)+" · регион "+escapeHtml(p.rarest_region||"—"):"Пока нет номеров")+'</small></div><span>'+money(Number(p.rarest_value)||0)+'</span></div>').join(""):'<div class="history-empty">Пока нет участников. Стань первым!</div>';
   }
+  setInterval(()=>{
+    const left=Math.max(0,Math.ceil((leaderboardNextRefresh-Date.now())/1000));
+    const el=$("leaderboard-refresh");
+    if(el)el.textContent=left>0?"Обновление через "+left+" сек.":"Обновляем рейтинг…";
+    if(left===0)refreshLeaderboard();
+  },1000);
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
   function chooseTier(){
     const total=weights.reduce((sum,n)=>sum+n,0);
@@ -282,6 +290,22 @@
       }).subscribe();
     }catch(error){console.warn("Global settings unavailable:",error);}
   }
+  async function loadAdminPlayers(){
+    if(!adminUser){notify("Нет прав администратора");return;}
+    const host=$("admin-player-list");
+    host.textContent="Загрузка игроков…";
+    const {data,error}=await supabase.rpc("admin_list_players");
+    if(error){host.textContent="Ошибка: "+error.message+" Проверь SQL-файл supabase/admin-tools.sql.";return;}
+    const rows=data||[];
+    $("money-player").innerHTML=rows.map(p=>'<option value="'+p.user_id+'">'+escapeHtml(p.display_name||p.email||"Игрок")+' — '+money(Number(p.balance)||0)+'</option>').join("")||'<option value="">Игроков пока нет</option>';
+    host.innerHTML=rows.length?rows.map(p=>'<div class="admin-player-row"><div><strong>'+escapeHtml(p.display_name||"Игрок")+'</strong><small>'+escapeHtml(p.email||p.user_id)+'</small></div><b>'+money(Number(p.balance)||0)+'</b></div>').join(""):'<p class="admin-status">Игроков пока нет.</p>';
+    if(rows.length){$("money-player").value=rows[0].user_id;$("money-balance").value=Number(rows[0].balance)||0;}
+  }
+  function selectAdminTab(tab){
+    document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.toggle("active",b.dataset.adminTab===tab));
+    ["players","odds","money"].forEach(name=>$("admin-"+name).hidden=name!==tab);
+    if(tab==="players"||tab==="money")loadAdminPlayers();
+  }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
   function showRegistrationSuccess(){
     const el=$("auth-success");
@@ -373,14 +397,24 @@
   });
   $("admin-toggle").addEventListener("click",async()=>{
     if(!supabase){notify("Сначала настрой Supabase");return;}
-    if(adminUser){$("admin-content").hidden=!$("admin-content").hidden;$("admin-toggle").textContent=$("admin-content").hidden?"Открыть":"Скрыть";return;}
+    if(adminUser){$("admin-content").hidden=!$("admin-content").hidden;$("admin-toggle").textContent=$("admin-content").hidden?"Открыть":"Скрыть";if(!$("admin-content").hidden)selectAdminTab("players");return;}
     const email=prompt("Email администратора Supabase:");if(!email)return;
     const password=prompt("Пароль аккаунта Supabase:");if(!password)return;
     const {data,error}=await supabase.auth.signInWithPassword({email,password});
     if(error){notify("Ошибка входа: "+error.message);return;}
     const {data:isAdmin,error:roleError}=await supabase.rpc("is_nomgen_admin");
     if(roleError||!isAdmin){await supabase.auth.signOut();notify("У аккаунта нет прав администратора");return;}
-    adminUser=data.user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();$("odds-status").textContent="Вход выполнен: "+email;
+    adminUser=data.user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();$("odds-status").textContent="Вход выполнен: "+email;selectAdminTab("players");
+  });
+  document.querySelectorAll("[data-admin-tab]").forEach(b=>b.addEventListener("click",()=>selectAdminTab(b.dataset.adminTab)));
+  $("refresh-admin-players").addEventListener("click",loadAdminPlayers);
+  $("save-player-balance").addEventListener("click",async()=>{
+    if(!adminUser){notify("Нет прав администратора");return;}
+    const userId=$("money-player").value, balance=Number($("money-balance").value);
+    if(!userId||!Number.isSafeInteger(balance)||balance<0){notify("Введи целый баланс от 0 ₽");return;}
+    const {error}=await supabase.rpc("admin_set_player_balance",{target_user_id:userId,new_balance:balance});
+    if(error){notify("Не удалось изменить баланс: "+error.message);return;}
+    notify("Баланс игрока обновлён");await loadAdminPlayers();await refreshLeaderboard();
   });
   $("apply-odds").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
