@@ -659,11 +659,11 @@
   $("collection-grid").addEventListener("click",e=>{const fav=e.target.closest("[data-favorite]");if(fav){toggleFavorite(Number(fav.dataset.favorite));return;}const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
   $("sell-all").addEventListener("click",sellAll);
-  $("menu-button").addEventListener("click",()=>$("menu-modal").hidden=false);
-  $("menu-close").addEventListener("click",()=>$("menu-modal").hidden=true);
-  $("menu-modal").addEventListener("click",e=>{if(e.target===$("menu-modal"))$("menu-modal").hidden=true;});
-  $("menu-collection").addEventListener("click",()=>{$("menu-modal").hidden=true;$("collection-modal").hidden=false;});
-  $("menu-upgrades").addEventListener("click",()=>{$("menu-modal").hidden=true;$("upgrade-modal").hidden=false;renderUpgrades();});
+  $("menu-button").addEventListener("click",()=>{$("menu-modal").hidden=false;$("menu-button").classList.add("active");$("home-button").classList.remove("active");});
+  $("menu-close").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");});
+  $("menu-modal").addEventListener("click",e=>{if(e.target===$("menu-modal")){$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");}});
+  $("menu-collection").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");$("collection-modal").hidden=false;});
+  $("menu-upgrades").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");$("upgrade-modal").hidden=false;renderUpgrades();});
   $("upgrade-close").addEventListener("click",()=>$("upgrade-modal").hidden=true);
   $("upgrade-modal").addEventListener("click",e=>{if(e.target===$("upgrade-modal"))$("upgrade-modal").hidden=true;});
   $("home-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);window.scrollTo({top:0,behavior:"smooth"});});
