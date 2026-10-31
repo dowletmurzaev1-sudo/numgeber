@@ -29,6 +29,9 @@
   const money = n => Math.round(n).toLocaleString("ru-RU") + " ₽";
   const state = load();
   let toastTimer;
+  let musicContext=null, musicMaster=null, musicNodes=[], musicTimer=null;
+  let musicEnabled=localStorage.getItem("nomgen-music-enabled")==="1";
+  let musicVolume=Math.max(0,Math.min(1,Number(localStorage.getItem("nomgen-music-volume")??0.35)));
   function load(){
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -72,7 +75,7 @@
     renderProfileButton();
     try{
       const {data:isAdmin,error:adminError}=await supabase.rpc("is_nomgen_admin");
-      if(!adminError&&isAdmin){adminUser=user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}
+      if(!adminError&&isAdmin){adminUser=user;$("admin-secret").hidden=false;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}else{adminUser=null;$("admin-secret").hidden=true;$("admin-panel").hidden=true;}
       const {data:userWeights,error:weightsError}=await supabase.rpc("get_my_rare_weights");
       if(!weightsError&&Array.isArray(userWeights)&&userWeights.length===5&&userWeights.some(x=>Number(x)>0)){weights=userWeights.map(Number);hasCustomWeights=true;}
       const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
@@ -286,7 +289,8 @@
         setTimeout(()=>loadPlayer(session.user),0);
       }
       if(event==="SIGNED_OUT"){
-        currentUser=null;playerReady=false;loadingUserId=null;
+        currentUser=null;adminUser=null;playerReady=false;loadingUserId=null;
+        $("admin-secret").hidden=true;$("admin-panel").hidden=true;$("admin-content").hidden=true;
         $("auth-gate").hidden=false;
         document.body.classList.add("auth-required");
         $("spin-button").disabled=true;
@@ -369,13 +373,61 @@
     img.innerHTML=source?'<img src="'+source+'" alt="Аватар">':'<span>'+(escapeHtml((playerName||"И").trim().charAt(0).toUpperCase()||"И"))+'</span>';
     $("profile-button").setAttribute("aria-label","Профиль: "+playerName);
   }
-  $("settings-open").addEventListener("click",()=>{$("settings-modal").hidden=false;renderUpgrades();});
+  $("settings-open").addEventListener("click",()=>{$("profile-modal").hidden=true;$("settings-modal").hidden=false;renderUpgrades();syncMusicControls();});
+  function syncMusicControls(){
+    $("music-toggle").textContent=musicEnabled?"Выключить фоновую музыку":"Включить фоновую музыку";
+    $("music-toggle").classList.toggle("active",musicEnabled);
+    $("music-volume").value=Math.round(musicVolume*100);
+    $("music-volume-value").textContent=Math.round(musicVolume*100)+"%";
+  }
+  function stopAmbientMusic(){
+    if(musicTimer){clearInterval(musicTimer);musicTimer=null;}
+    musicNodes.forEach(node=>{try{node.stop();}catch(e){}});
+    musicNodes=[];musicMaster=null;
+    if(musicContext){musicContext.close().catch(()=>{});musicContext=null;}
+  }
+  async function startAmbientMusic(){
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx){notify("Этот браузер не поддерживает фоновую музыку");return;}
+    if(!musicContext){
+      musicContext=new AudioCtx();
+      musicMaster=musicContext.createGain();musicMaster.gain.value=musicVolume*0.12;musicMaster.connect(musicContext.destination);
+      const filter=musicContext.createBiquadFilter();filter.type="lowpass";filter.frequency.value=850;filter.connect(musicMaster);
+      const notes=[130.81,164.81,196,261.63];
+      notes.forEach((hz,i)=>{
+        const osc=musicContext.createOscillator(),gain=musicContext.createGain();
+        osc.type="sine";osc.frequency.value=hz;
+        gain.gain.value=[0.32,0.2,0.16,0.1][i];
+        osc.connect(gain);gain.connect(filter);osc.start();musicNodes.push(osc);
+      });
+      let chord=0;
+      const progressions=[[130.81,164.81,196,261.63],[110,146.83,174.61,220],[98,130.81,164.81,196],[116.54,146.83,174.61,233.08]];
+      musicTimer=setInterval(()=>{
+        if(!musicContext)return;
+        chord=(chord+1)%progressions.length;
+        progressions[chord].forEach((hz,i)=>musicNodes[i]?.frequency.setTargetAtTime(hz,musicContext.currentTime,1.8));
+      },6500);
+    }
+    try{await musicContext.resume();}catch(e){}
+    if(musicMaster)musicMaster.gain.setTargetAtTime(musicVolume*0.12,musicContext.currentTime,0.15);
+  }
+  $("music-toggle").addEventListener("click",async()=>{
+    musicEnabled=!musicEnabled;localStorage.setItem("nomgen-music-enabled",musicEnabled?"1":"0");
+    if(musicEnabled)await startAmbientMusic();else stopAmbientMusic();
+    syncMusicControls();
+  });
+  $("music-volume").addEventListener("input",e=>{
+    musicVolume=Number(e.target.value)/100;localStorage.setItem("nomgen-music-volume",String(musicVolume));
+    if(musicMaster&&musicContext)musicMaster.gain.setTargetAtTime(musicVolume*0.12,musicContext.currentTime,0.08);
+    syncMusicControls();
+  });
+  document.addEventListener("visibilitychange",()=>{if(document.hidden&&musicContext?.state==="running")musicContext.suspend();else if(!document.hidden&&musicEnabled&&musicContext)musicContext.resume().catch(()=>{});});
   $("settings-close").addEventListener("click",()=>{$("settings-modal").hidden=true;});
   $("settings-modal").addEventListener("click",e=>{if(e.target===$("settings-modal"))$("settings-modal").hidden=true;});
   $("collection-open").addEventListener("click",()=>{$("collection-modal").hidden=false;});
   $("collection-close").addEventListener("click",()=>{$("collection-modal").hidden=true;});
   $("collection-modal").addEventListener("click",e=>{if(e.target===$("collection-modal"))$("collection-modal").hidden=true;});
-  $("admin-secret").addEventListener("click",()=>{$("admin-panel").hidden=false;});
+  $("admin-secret").addEventListener("click",()=>{if(!adminUser||currentUser?.id!==adminUser.id){notify("Доступ только для администраторского аккаунта");return;} $("admin-panel").hidden=false;});
   $("buy-luck").addEventListener("click",()=>{
     const level=state.luckLevel||0;if(level>=5)return;
     const price=LUCK_COSTS[level];
