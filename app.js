@@ -213,13 +213,25 @@
       if(Array.isArray(payload.new.weights)){weights=payload.new.weights.map(Number);renderOdds();}
     }).subscribe();
     const {data:sessionData}=await supabase.auth.getSession();
-    $("auth-gate").hidden=false;
-    document.body.classList.add("auth-required");
-    $("spin-button").disabled=true;
-    if(sessionData.session) $("auth-error").textContent="Выбери «Войти через Google», чтобы загрузить облачный прогресс.";
+    if(sessionData.session){
+      // Если пользователь уже вошёл ранее, сразу загружаем его облачный прогресс
+      // и закрываем окно выбора режима после успешной загрузки.
+      await loadPlayer(sessionData.session.user);
+    }else{
+      $("auth-gate").hidden=false;
+      document.body.classList.add("auth-required");
+      $("spin-button").disabled=true;
+    }
     supabase.auth.onAuthStateChange((event,session)=>{
-      if(event==="SIGNED_IN"&&session?.user&&!currentUser) setTimeout(()=>loadPlayer(session.user),0);
-      if(event==="SIGNED_OUT"){currentUser=null;playerReady=false;$("auth-gate").hidden=false;document.body.classList.add("auth-required");}
+      if((event==="SIGNED_IN"||event==="INITIAL_SESSION")&&session?.user&&!currentUser){
+        setTimeout(()=>loadPlayer(session.user),0);
+      }
+      if(event==="SIGNED_OUT"){
+        currentUser=null;playerReady=false;
+        $("auth-gate").hidden=false;
+        document.body.classList.add("auth-required");
+        $("spin-button").disabled=true;
+      }
     });
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
