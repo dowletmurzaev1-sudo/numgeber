@@ -64,6 +64,20 @@
       <div class="panel-heading"><div><span class="section-kicker">ФИНАНСОВЫЙ ЖУРНАЛ</span><h2>История продаж</h2></div><span class="history-count" id="sales-count">0 операций</span></div>
       <div class="history-list" id="history-list"><div class="history-empty">Здесь появятся твои сделки</div></div>
     </section>
+    <section class="panel leaderboard-panel">
+      <div class="panel-heading"><div><span class="section-kicker">СОСТЯЗАНИЕ</span><h2>Лидерборд игроков</h2></div><span class="trophy">🏆</span></div>
+      <div class="player-entry"><label for="player-name">Имя игрока</label><input id="player-name" maxlength="20" placeholder="Введи свой ник"><button id="save-player" class="text-button">Сохранить профиль</button></div>
+      <div id="leaderboard" class="leaderboard-list"><div class="history-empty">Стань первым участником рейтинга</div></div>
+    </section>
+    <section class="panel admin-panel">
+      <div class="panel-heading"><div><span class="section-kicker">УПРАВЛЕНИЕ ИГРОЙ</span><h2>Админ-панель</h2></div><button id="admin-toggle" class="text-button">Открыть</button></div>
+      <div id="admin-content" hidden>
+        <p class="admin-warning">Измени веса редкостей. Чем выше число, тем чаще выпадает этот уровень. Итоговые шансы автоматически нормализуются до 100%.</p>
+        <div id="odds-controls" class="odds-controls"></div>
+        <div class="admin-actions"><button id="apply-odds" class="spin-button">Сохранить шансы</button><button id="reset-odds" class="text-button">Вернуть стандартные</button></div>
+        <p id="odds-status" class="admin-status">Настройки действуют в этом браузере.</p>
+      </div>
+    </section>
     <footer><span class="footer-brand">НОМГЕН</span><span>Крути. Собирай. Богатей. Найди номер мечты!</span><button id="reset-game" class="reset-button">Сбросить прогресс</button></footer>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
