@@ -31,3 +31,13 @@
 - `index.html` — разметка интерфейса.
 - `style.css` — оформление и адаптивная вёрстка.
 - `app.js` — генератор, экономика, коллекция и сохранение.
+
+## Подключение Supabase для глобальных шансов
+1. Создай проект Supabase и скопируй Project URL и anon/publishable key из Project Settings → API.
+2. Впиши их в `supabase-config.js`.
+3. Выполни `supabase/schema.sql` в SQL Editor.
+4. Создай аккаунт администратора в Authentication → Users.
+5. Добавь UUID этого аккаунта в `public.nomgen_admins` запросом, указанным в конце SQL-файла.
+6. Включи Realtime для `nomgen_settings` в Database → Publications → supabase_realtime.
+7. Опубликуй сайт заново. Вход в админ-панель — email и пароль Supabase.
+Используй только anon/publishable key в браузере. Никогда не размещай service_role key на клиенте.
