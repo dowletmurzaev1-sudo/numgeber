@@ -177,12 +177,27 @@
     return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now()};
   }
   function notify(message){const el=$("toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2400);}
-  function spin(){
+  function makeForcedNumber(forced){
+    const plate=String(forced.plate||"").toUpperCase();
+    const match=plate.match(/^([АВЕКМНОРСТУХ])(\\d{3})([АВЕКМНОРСТУХ]{2})$/);
+    if(!match)return makeNumber();
+    const region=String(forced.region||"77");
+    const value=Math.round((15000000+Math.random()*35000000)/50)*50;
+    return {id:state.nextId++,digits:match[2],chars:match[1]+match[3],region,plate,tier:"Легендарный",key:"legendary",color:tiers[4].color,value,created:Date.now()};
+  }
+  async function spin(){
     if($("spin-button").disabled)return;
     if(state.balance<COST){notify("Недостаточно средств для попытки");return;}
-    state.balance-=COST;state.spins++;save();render();
-    const btn=$("spin-button"),machine=$("plate-wrap"),panel=$("generator-panel");
+    const btn=$("spin-button");
     btn.disabled=true;btn.querySelector("span:nth-child(2)").textContent="ГЕНЕРАТОР ЗАПУЩЕН";
+    let forcedNumber=null;
+    if(currentUser&&supabase){
+      const {data,error}=await supabase.rpc("consume_forced_number");
+      if(error){btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";notify("Не удалось проверить настройку номера: "+error.message);return;}
+      forcedNumber=data;
+    }
+    state.balance-=COST;state.spins++;save();render();
+    const machine=$("plate-wrap");
     machine.classList.add("spinning");
     $("rarity-label").textContent="ИДЁТ РОЗЫГРЫШ";$("result-value").textContent="Ищем красивую комбинацию…";$("result-hint").textContent="Удача уже где-то рядом";
     let ticks=0;
@@ -191,10 +206,10 @@
       $("plate-region").textContent=regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
       if(ticks>=10){
         clearInterval(interval);machine.classList.remove("spinning");
-        const item=makeNumber();state.collection.unshift(item);save();
+        const item=forcedNumber?makeForcedNumber(forcedNumber):makeNumber();state.collection.unshift(item);save();
         $("plate-main").textContent=item.plate;$("plate-region").textContent=item.region;
         const info=$("result-info");info.className="result-info rarity-"+item.key;
-        $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent="Номер добавлен в твою коллекцию";
+        $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=forcedNumber?"Администратор назначил этот номер":"Номер добавлен в твою коллекцию";
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
         render();notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
@@ -346,7 +361,9 @@
     const rows=data||[];
     const opts=rows.map(p=>'<option value="'+p.user_id+'">'+escapeHtml(p.display_name||p.email||"Игрок")+' — '+money(Number(p.balance)||0)+'</option>').join("")||'<option value="">Игроков пока нет</option>';
     $("money-player").innerHTML=opts;
-    $("odds-player").innerHTML=rows.map(p=>'<option value="'+p.user_id+'">'+escapeHtml(p.display_name||p.email||"Игрок")+'</option>').join("")||'<option value="">Игроков пока нет</option>';
+    const playerOptions=rows.map(p=>'<option value="'+p.user_id+'">'+escapeHtml(p.display_name||p.email||"Игрок")+"</option>").join("")||'<option value="">Игроков пока нет</option>';
+    $("odds-player").innerHTML=playerOptions;
+    $("forced-player").innerHTML=playerOptions;
     host.innerHTML=rows.length?rows.map(p=>'<div class="admin-player-row"><div><strong>'+escapeHtml(p.display_name||"Игрок")+'</strong><small>'+escapeHtml(p.email||p.user_id)+'</small></div><b>'+money(Number(p.balance)||0)+'</b></div>').join(""):'<p class="admin-status">Игроков пока нет.</p>';
     if(rows.length){
       $("money-player").value=rows[0].user_id;$("money-balance").value=Number(rows[0].balance)||0;
@@ -355,7 +372,7 @@
   }
   function selectAdminTab(tab){
     document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.toggle("active",b.dataset.adminTab===tab));
-    ["players","odds","money"].forEach(name=>$("admin-"+name).hidden=name!==tab);
+    ["players","odds","money","forced"].forEach(name=>$("admin-"+name).hidden=name!==tab);
     if(tab==="players"||tab==="money")loadAdminPlayers();
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
@@ -586,6 +603,30 @@
     const {error}=await supabase.rpc("admin_set_player_weights",{target_user_id:$("odds-player").value,new_weights:DEFAULT_WEIGHTS});
     if(error){notify("Не удалось сбросить: "+error.message);return;}
     weights=[...DEFAULT_WEIGHTS];renderOdds();$("odds-status").textContent="Стандартные шансы восстановлены для выбранного игрока.";notify("Шансы сброшены");
+  });
+  $("forced-save").addEventListener("click",async()=>{
+    if(!supabase||!adminUser){notify("Войди как администратор");return;}
+    const userId=$("forced-player").value;
+    const plate=$("forced-plate").value.trim().toUpperCase().replace(/\\s/g,"");
+    const region=$("forced-region").value.trim();
+    const count=Number($("forced-count").value);
+    if(!userId){notify("Выбери игрока");return;}
+    if(!/^[АВЕКМНОРСТУХ]\\d{3}[АВЕКМНОРСТУХ]{2}$/.test(plate)){notify("Введи номер в формате А777АА");return;}
+    if(!/^\\d{2,3}$/.test(region)){notify("Регион должен содержать 2–3 цифры");return;}
+    if(!Number.isInteger(count)||count<1||count>100){notify("Количество попыток: от 1 до 100");return;}
+    const {error}=await supabase.rpc("admin_set_forced_number",{target_user_id:userId,forced_plate:plate,forced_region:region,spin_count:count});
+    if(error){notify("Не удалось назначить номер: "+error.message);return;}
+    $("forced-status").textContent="Назначено: "+plate+" · регион "+region+" · выпадет "+count+" раз подряд.";
+    notify("Номер назначен выбранному игроку");
+  });
+  $("forced-clear").addEventListener("click",async()=>{
+    if(!supabase||!adminUser){notify("Войди как администратор");return;}
+    const userId=$("forced-player").value;
+    if(!userId){notify("Выбери игрока");return;}
+    const {error}=await supabase.rpc("admin_clear_forced_number",{target_user_id:userId});
+    if(error){notify("Не удалось отменить: "+error.message);return;}
+    $("forced-status").textContent="Назначенный номер отменён.";
+    notify("Настройка выпадения отменена");
   });
   $("collection-grid").addEventListener("click",e=>{const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
