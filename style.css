@@ -91,3 +91,6 @@
 .win-price{font-variant-numeric:tabular-nums;text-shadow:0 0 22px color-mix(in srgb,var(--tier),transparent 45%);animation:price-reveal .8s .12s cubic-bezier(.16,1,.3,1) both}
 @keyframes rarity-reveal{0%{opacity:0;transform:translateY(12px) scale(.72);letter-spacing:.18em}70%{opacity:1;transform:translateY(-2px) scale(1.08)}100%{opacity:1;transform:translateY(0) scale(1);letter-spacing:normal}}
 @keyframes price-reveal{0%{opacity:0;transform:translateY(10px) scale(.8)}100%{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Yandex rewarded ad action */
+.reward-ad-button{display:block;width:100%;margin:10px auto 0;padding:11px 14px;border:1px solid #7ea84b88;border-radius:9px;background:#c6f36b12;color:#d8ff8a;font:800 11px Manrope,sans-serif;cursor:pointer;transition:background .2s,border-color .2s}.reward-ad-button:hover{background:#c6f36b22;border-color:#c6f36b}.reward-ad-button:disabled{opacity:.55;cursor:wait}.reward-ad-button[hidden]{display:none}
