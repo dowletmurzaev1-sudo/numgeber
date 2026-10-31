@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900">
+<defs>
+ <linearGradient id="gold" x2="0" y2="1"><stop stop-color="#fff1a8"/><stop offset=".25" stop-color="#ffcf42"/><stop offset=".58" stop-color="#b87908"/><stop offset=".82" stop-color="#ffe58a"/><stop offset="1" stop-color="#8b5200"/></linearGradient>
+ <linearGradient id="plate" x2="0" y2="1"><stop stop-color="#fff8dc"/><stop offset=".5" stop-color="#d9a93f"/><stop offset="1" stop-color="#8a5b17"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="12"/><feOffset dy="14"/><feComponentTransfer><feFuncA type="linear" slope=".8"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <radialGradient id="glow"><stop stop-color="#e5a52c" stop-opacity=".3"/><stop offset="1" stop-color="#080808" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="900" height="900" rx="55" fill="#090909"/><ellipse cx="450" cy="420" rx="440" ry="440" fill="url(#glow)"/>
+<g fill="url(#gold)" stroke="#6c3e00" stroke-width="7" filter="url(#shadow)">
+ <path d="M300 185 L260 95 L355 145 L450 30 L545 145 L640 95 L600 185 Z"/>
+ <path d="M300 185 Q450 235 600 185 L580 220 Q450 270 320 220 Z"/>
+</g>
+<g transform="rotate(-7 450 340)" filter="url(#shadow)">
+ <rect x="110" y="260" width="680" height="150" rx="22" fill="url(#plate)" stroke="#ffe49a" stroke-width="9"/>
+ <rect x="125" y="275" width="650" height="120" rx="12" fill="none" stroke="#6e480e" stroke-width="4"/>
+ <text x="435" y="365" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="91" fill="#16120b" stroke="#fff0b8" stroke-width="1">A777AA</text><text x="705" y="360" font-family="Arial" font-weight="bold" font-size="30" fill="#16120b">77</text>
+</g>
+<g transform="rotate(0 450 490)" filter="url(#shadow)">
+ <rect x="80" y="420" width="740" height="155" rx="22" fill="url(#plate)" stroke="#ffe49a" stroke-width="9"/>
+ <rect x="95" y="435" width="710" height="125" rx="12" fill="none" stroke="#6e480e" stroke-width="4"/>
+ <text x="450" y="535" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="96" fill="#16120b">K999KK</text><text x="720" y="535" font-family="Arial" font-weight="bold" font-size="30" fill="#16120b">99</text>
+</g>
+<g transform="rotate(7 450 660)" filter="url(#shadow)">
+ <rect x="110" y="590" width="680" height="145" rx="22" fill="url(#plate)" stroke="#ffe49a" stroke-width="9"/>
+ <rect x="125" y="605" width="650" height="115" rx="12" fill="none" stroke="#6e480e" stroke-width="4"/>
+ <text x="435" y="690" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="91" fill="#16120b">B555BB</text><text x="705" y="690" font-family="Arial" font-weight="bold" font-size="30" fill="#16120b">05</text>
+</g>
+<text x="450" y="835" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="110" letter-spacing="-3" fill="url(#gold)" stroke="#5d3700" stroke-width="7" paint-order="stroke">NomGen</text>
+</svg>
