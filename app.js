@@ -235,6 +235,36 @@
     const chars=match[1]+match[3], pattern=patternDetails(match[2],chars);
     return {id:state.nextId++,digits:match[2],chars,region,plate,tier:"Легендарный",key:"legendary",color:tiers[4].color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern),favorite:false};
   }
+  function resumeYandexGameplay(){
+    ysdk?.features?.GameplayAPI?.start();
+  }
+  function showYandexFullscreenAd(){
+    if(!isYandexGames||!ysdk?.adv?.showFullscreenAdv)return;
+    ysdk.adv.showFullscreenAdv({callbacks:{
+      onOpen:()=>{stopAmbientMusic();ysdk.features?.GameplayAPI?.stop();},
+      onClose:()=>resumeYandexGameplay(),
+      onError:error=>{console.warn("Yandex fullscreen ad failed:",error);resumeYandexGameplay();}
+    }});
+  }
+  $("reward-ad-button").addEventListener("click",()=>{
+    if(!isYandexGames||!ysdk?.adv?.showRewardedVideo){notify("Реклама сейчас недоступна");return;}
+    const button=$("reward-ad-button");
+    let rewarded=false;
+    button.disabled=true;
+    ysdk.adv.showRewardedVideo({callbacks:{
+      onOpen:()=>{stopAmbientMusic();ysdk.features?.GameplayAPI?.stop();},
+      onRewarded:()=>{
+        if(rewarded)return;
+        rewarded=true;state.balance+=5000;save();render();
+        notify("Награда за просмотр: +5 000 ₽");
+      },
+      onClose:()=>{button.disabled=false;resumeYandexGameplay();},
+      onError:error=>{
+        console.warn("Yandex rewarded ad failed:",error);
+        button.disabled=false;resumeYandexGameplay();notify("Не удалось загрузить рекламу");
+      }
+    }});
+  });
   async function spin(){
     if($("spin-button").disabled)return;
     if(state.balance<COST){notify("Недостаточно средств для попытки");return;}
@@ -263,6 +293,7 @@
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
         render();showWinAnimation(item);notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
+        if(isYandexGames&&state.spins%6===0)setTimeout(showYandexFullscreenAd,1100);
       }
     },60);
   }
@@ -359,6 +390,7 @@
         $("logout-button").hidden=true;
         $("profile-logout").hidden=true;
         $("yandex-auth").hidden=!!yandexPlayer?.isAuthorized?.();
+        $("reward-ad-button").hidden=false;
         document.body.classList.remove("auth-required");
         render();
         renderUpgrades();
