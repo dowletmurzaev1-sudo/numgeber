@@ -121,6 +121,20 @@
     </div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    // SDK: для архива Яндекс Игр используется относительный путь, на GitHub Pages — официальный CDN.
+    window.nomgenYandexSdkReady = new Promise(resolve => {
+      const script = document.createElement("script");
+      const host = location.hostname;
+      script.src = /(^|\\.)yandex\\.(ru|com|by|kz|uz)$/.test(host)
+        ? "/sdk.js"
+        : "https://sdk.games.s3.yandex.net/sdk.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+    });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js?v=20261031-leaders-epic-animation"></script>
