@@ -12,6 +12,15 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="auth-gate" class="auth-gate" hidden>
+    <div class="auth-card">
+      <div class="brand-mark">Н</div>
+      <h2>Добро пожаловать в НомГен</h2>
+      <p>Войди через Google, чтобы начать игру и сохранять коллекцию в своём аккаунте.</p>
+      <button id="google-login" class="google-button"><span>G</span> Продолжить с Google</button>
+      <small id="auth-error" role="status"></small>
+    </div>
+  </div>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
   <header class="topbar">
     <a class="brand" href="#" aria-label="НомГен — главная"><span class="brand-mark">Н</span><span>НОМ<span class="accent">ГЕН</span><small>КОЛЛЕКЦИОНЕР НОМЕРОВ</small></span></a>
@@ -66,7 +75,8 @@
     </section>
     <section class="panel leaderboard-panel">
       <div class="panel-heading"><div><span class="section-kicker">СОСТЯЗАНИЕ</span><h2>Лидерборд игроков</h2></div><span class="trophy">🏆</span></div>
-      <div class="player-entry"><label for="player-name">Имя игрока</label><input id="player-name" maxlength="20" placeholder="Введи свой ник"><button id="save-player" class="text-button">Сохранить профиль</button></div>
+      <div class="player-entry"><label for="player-name">Имя игрока</label><input id="player-name" maxlength="20" placeholder="Введи свой ник"><button id="save-player" class="text-button">Сохранить профиль</button><button id="logout-button" class="text-button">Выйти</button></div>
+      <p class="leaderboard-note">Публичный рейтинг: показывается самый редкий номер каждого игрока и его стоимость.</p>
       <div id="leaderboard" class="leaderboard-list"><div class="history-empty">Стань первым участником рейтинга</div></div>
     </section>
     <section class="panel admin-panel">
