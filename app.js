@@ -9,6 +9,9 @@
   let players = [];
   let supabase = null;
   let adminUser = null;
+  let currentUser = null;
+  let playerReady = false;
+  let saveQueue = Promise.resolve();
   let playerName = localStorage.getItem("nomgen-player-name") || "Игрок";
   const letters = ["А","В","Е","К","М","Н","О","Р","С","Т","У","Х"];
   const regions = ["77","97","99","177","197","199","777","50","90","150","750","78","98","178","198","23","93","123","116","716","02","102","54","154","66","96","196","74","174","52","152","63","163","61","161"];
@@ -30,7 +33,66 @@
     } catch(e) {}
     return {balance:5000,collection:[],sales:[],spins:0,nextId:1};
   }
-  function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }
+  function save(){
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    if(currentUser && supabase) {
+      const rarest=[...state.collection].sort((a,b)=>tierRank(b.key)-tierRank(a.key)||b.value-a.value)[0]||null;
+      saveQueue=saveQueue.then(()=>supabase.from("nomgen_players").upsert({
+        user_id:currentUser.id,
+        display_name:playerName,
+        game_state:state,
+        rarest_plate:rarest?.plate||null,
+        rarest_region:rarest?.region||null,
+        rarest_tier:rarest?.tier||null,
+        rarest_value:rarest?.value||0,
+        rarity_rank:rarest?tierRank(rarest.key):0,
+        updated_at:new Date().toISOString()
+      },{onConflict:"user_id"})).then(({error})=>{if(error) console.error("Cloud save failed:",error.message);});
+    }
+  }
+  function tierRank(key){return ({common:1,rare:2,epic:3,mythic:4,legendary:5})[key]||0;}
+  function showGame(){
+    $("auth-gate").hidden=true;
+    document.body.classList.remove("auth-required");
+    playerReady=true;
+    $("spin-button").disabled=false;
+  }
+  async function loadPlayer(user){
+    currentUser=user;
+    const {data,error}=await supabase.from("nomgen_players").select("*").eq("user_id",user.id).maybeSingle();
+    if(error){$("auth-error").textContent="Не удалось загрузить профиль: "+error.message;return;}
+    if(data?.game_state && typeof data.game_state.balance==="number"){
+      Object.assign(state,data.game_state);
+      playerName=data.display_name||user.user_metadata?.full_name||user.email?.split("@")[0]||"Игрок";
+    }else{
+      playerName=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок";
+      await persistProfile();
+    }
+    localStorage.setItem("nomgen-player-name",playerName);
+    $("player-name").value=playerName;
+    render();
+    showGame();
+    await refreshLeaderboard();
+  }
+  async function persistProfile(){
+    if(!currentUser||!supabase)return;
+    const rarest=[...state.collection].sort((a,b)=>tierRank(b.key)-tierRank(a.key)||b.value-a.value)[0]||null;
+    const {error}=await supabase.from("nomgen_players").upsert({
+      user_id:currentUser.id,display_name:playerName,game_state:state,
+      rarest_plate:rarest?.plate||null,rarest_region:rarest?.region||null,
+      rarest_tier:rarest?.tier||null,rarest_value:rarest?.value||0,
+      rarity_rank:rarest?tierRank(rarest.key):0,updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+    if(error)notify("Не удалось сохранить профиль: "+error.message);
+    else await refreshLeaderboard();
+  }
+  async function refreshLeaderboard(){
+    if(!supabase)return;
+    const {data,error}=await supabase.from("nomgen_players").select("user_id,display_name,rarest_plate,rarest_region,rarest_tier,rarest_value,rarity_rank").order("rarity_rank",{ascending:false}).order("rarest_value",{ascending:false}).limit(100);
+    if(error){$("leaderboard").innerHTML='<div class="history-empty">Не удалось загрузить рейтинг: '+error.message+'</div>';return;}
+    $("leaderboard").innerHTML=data?.length?data.map((p,i)=>'<div class="leader-row"><span class="leader-rank">'+(i+1)+'</span><div class="leader-details"><strong>'+escapeHtml(p.display_name||"Игрок")+'</strong><small>'+(p.rarest_plate?escapeHtml(p.rarest_tier)+" · "+escapeHtml(p.rarest_plate)+" · регион "+escapeHtml(p.rarest_region||"—"):"Пока нет номеров")+'</small></div><span>'+money(Number(p.rarest_value)||0)+'</span></div>').join(""):'<div class="history-empty">Пока нет участников. Стань первым!</div>';
+  }
+  function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
   function chooseTier(){
     const total=weights.reduce((sum,n)=>sum+n,0);
     let roll=Math.random()*total;
@@ -146,14 +208,33 @@
       if(Array.isArray(payload.new.weights)){weights=payload.new.weights.map(Number);renderOdds();}
     }).subscribe();
     const {data:sessionData}=await supabase.auth.getSession();
-    if(sessionData.session){const {data:isAdmin}=await supabase.rpc("is_nomgen_admin");if(isAdmin){adminUser=sessionData.session.user;$("admin-content").hidden=false;renderOdds();}else await supabase.auth.signOut();}
+    if(sessionData.session){
+      const {data:isAdmin}=await supabase.rpc("is_nomgen_admin");
+      if(isAdmin){adminUser=sessionData.session.user;$("admin-content").hidden=false;renderOdds();}
+      await loadPlayer(sessionData.session.user);
+    }else{
+      $("auth-gate").hidden=false;
+      document.body.classList.add("auth-required");
+      $("spin-button").disabled=true;
+    }
+    supabase.auth.onAuthStateChange((event,session)=>{
+      if(event==="SIGNED_IN"&&session?.user&&!currentUser) setTimeout(()=>loadPlayer(session.user),0);
+      if(event==="SIGNED_OUT"){currentUser=null;playerReady=false;$("auth-gate").hidden=false;document.body.classList.add("auth-required");}
+    });
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
+  $("google-login").addEventListener("click",async()=>{
+    if(!supabase){$("auth-error").textContent="Supabase не настроен.";return;}
+    $("google-login").disabled=true;$("auth-error").textContent="Переход к Google…";
+    const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});
+    if(error){$("auth-error").textContent="Ошибка входа: "+error.message;$("google-login").disabled=false;}
+  });
+  $("logout-button").addEventListener("click",async()=>{if(supabase)await supabase.auth.signOut();});
   $("spin-button").addEventListener("click",spin);
-  $("save-player").addEventListener("click",()=>{
+  $("save-player").addEventListener("click",async()=>{
     const name=$("player-name").value.trim().slice(0,20);
     if(!name){notify("Введи имя игрока");return;}
-    playerName=name;localStorage.setItem("nomgen-player-name",playerName);render();notify("Профиль сохранён");
+    playerName=name;localStorage.setItem("nomgen-player-name",playerName);$("player-name").value=playerName;render();await persistProfile();notify("Профиль сохранён");
   });
   $("admin-toggle").addEventListener("click",async()=>{
     if(!supabase){notify("Сначала настрой Supabase");return;}
@@ -184,6 +265,7 @@
   $("sell-duplicates").addEventListener("click",sellDuplicates);
   $("sort-select").addEventListener("change",render);
   $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция и история будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
+  $("player-name").value=playerName;
   render();
   initSupabase();
 })();
