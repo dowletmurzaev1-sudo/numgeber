@@ -37,7 +37,7 @@
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if(saved && typeof saved.balance === "number" && Array.isArray(saved.collection) && Array.isArray(saved.sales)) return {...saved, spins:Number(saved.spins)||0, balance:Math.max(0,saved.balance), luckLevel:Math.min(5,Math.max(0,Number(saved.luckLevel)||0)), autoTapLevel:Math.min(3,Math.max(0,Number(saved.autoTapLevel)||0)), autoTapEnabled:Boolean(saved.autoTapEnabled)};
     } catch(e) {}
-    return {balance:5000,collection:[],sales:[],spins:0,nextId:1,luckLevel:0,autoTapLevel:0,autoTapEnabled:false};
+    return {balance:5000,collection:[],sales:[],spins:0,nextId:1,luckLevel:0};
   }
   function save(){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
@@ -92,7 +92,6 @@
       localStorage.setItem("nomgen-player-name",playerName);
       $("player-name").value=playerName;
       render();
-      configureAutoTap();
       renderProfileButton();
       await refreshLeaderboard();
     }catch(error){
@@ -135,9 +134,6 @@
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
   const LUCK_MULTIPLIERS=[1,1.1,1.3,1.5,1.7,2];
   const LUCK_COSTS=[10000,150000,700000,2500000,7000000];
-  const AUTOTAP_INTERVALS=[1000,900,800,700];
-  const AUTOTAP_COSTS=[1000000,8000000,17000000];
-  let autoTapTimer=null;
   function chooseTier(){
     const luck=LUCK_MULTIPLIERS[state.luckLevel]||1;
     const effectiveWeights=weights.map((weight,index)=>index===0?weight:weight*luck);
@@ -153,6 +149,18 @@
     const letterTriple=chars[0]===chars[1]&&chars[1]===chars[2];
     const sequence=["123","234","345","456","567","678","789","987","876","765","654","543","432","321"].includes(digits);
     return {digitPairs,letterPairs,digitTriple,letterTriple,sequence,score:(digitPairs?2:0)+(letterPairs?2:0)+(digitTriple?2:0)+(letterTriple?2:0)+(sequence?1:0),label:[digitTriple?"три одинаковые цифры":digitPairs?"две одинаковые цифры":"",letterTriple?"три одинаковые буквы":letterPairs?"две одинаковые буквы":"",sequence?"последовательность":""] .filter(Boolean).join(" · ")};
+  }
+  function numberReason(digits,chars,region,pattern){
+    const reasons=[];
+    if(["777","999","001","002","003","004","005"].includes(region)) reasons.push("Престижный региональный код "+region);
+    if(["777","001","002","003","111","222","333","555","888","999"].includes(digits)) reasons.push("Красивый цифровой ряд "+digits);
+    if(chars[0]===chars[1]&&chars[1]===chars[2]) reasons.push("Три одинаковые буквы — коллекционная серия");
+    else if(chars[0]===chars[1]||chars[1]===chars[2]||chars[0]===chars[2]) reasons.push("Повторяющиеся буквы — востребованная комбинация");
+    if(digits[0]===digits[1]&&digits[1]===digits[2]) reasons.push("Три одинаковые цифры — «тройной» номер");
+    else if(pattern.digitPairs) reasons.push("Повторяющиеся цифры повышают коллекционную ценность");
+    if(pattern.sequence) reasons.push("Последовательность цифр — легко запоминаемый номер");
+    if(!reasons.length) reasons.push("Цена определяется редкостью выпадения и сочетанием символов");
+    return reasons.join(" · ");
   }
   function makeNumber(){
     const baseTier=chooseTier();
@@ -176,10 +184,11 @@
     const premiumMultiplier=1+(pattern.digitPairs?0.65:0)+(pattern.letterPairs?0.65:0)+(pattern.digitTriple?1.1:0)+(pattern.letterTriple?1.1:0)+(pattern.sequence?0.35:0);
     let value=Math.round((tier.min+Math.random()*(tier.max-tier.min))*premiumMultiplier/50)*50;
     if(tier.key==="legendary") value=Math.max(15000000,value);
-    return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label};
+    const reason=numberReason(digits,chars,region,pattern);
+    return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason,favorite:false};
   }
   function showWinAnimation(item){
-    if(tierRank(item.key)<2 && !item.pattern)return;
+    if(tierRank(item.key)<2 && !item.pattern && !item.reason)return;
     const overlay=$("win-overlay");
     overlay.className="win-overlay rarity-"+item.key+" visible";
     $("win-tier").textContent=item.tier.toUpperCase();
@@ -207,7 +216,8 @@
     if(!match)return makeNumber();
     const region=String(forced.region||"77");
     const value=Math.round((15000000+Math.random()*35000000)/50)*50;
-    return {id:state.nextId++,digits:match[2],chars:match[1]+match[3],region,plate,tier:"Легендарный",key:"legendary",color:tiers[4].color,value,created:Date.now()};
+    const chars=match[1]+match[3], pattern=patternDetails(match[2],chars);
+    return {id:state.nextId++,digits:match[2],chars,region,plate,tier:"Легендарный",key:"legendary",color:tiers[4].color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern),favorite:false};
   }
   async function spin(){
     if($("spin-button").disabled)return;
@@ -233,7 +243,7 @@
         const item=forcedNumber?makeForcedNumber(forcedNumber):makeNumber();state.collection.unshift(item);save();
         $("plate-main").textContent=item.plate;$("plate-region").textContent=item.region;
         const info=$("result-info");info.className="result-info rarity-"+item.key;
-        $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=forcedNumber?"Администратор назначил этот номер":"Номер добавлен в твою коллекцию";
+        $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=item.reason||"Номер добавлен в твою коллекцию";
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
         render();showWinAnimation(item);notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
@@ -242,9 +252,24 @@
   }
   function sell(id){
     const index=state.collection.findIndex(x=>x.id===id);if(index<0)return;
+    if(state.collection[index].favorite){notify("Избранный номер нельзя продать");return;}
     const [item]=state.collection.splice(index,1);state.balance+=item.value;
     state.sales.unshift({plate:item.plate,region:item.region,tier:item.tier,value:item.value,date:Date.now()});
     save();render();notify("Продано за "+money(item.value));
+  }
+  function toggleFavorite(id){
+    const item=state.collection.find(x=>x.id===id);if(!item)return;
+    item.favorite=!item.favorite;save();render();
+    notify(item.favorite?"Добавлено в избранное — номер защищён от продажи":"Убрано из избранного");
+  }
+  function sellAll(){
+    const items=state.collection.filter(x=>!x.favorite);
+    if(!items.length){notify("Нет номеров для продажи: все оставшиеся в избранном");return;}
+    if(!confirm("Продать все номера, кроме избранных? Количество: "+items.length))return;
+    const ids=new Set(items.map(x=>x.id)),total=items.reduce((sum,x)=>sum+x.value,0);
+    state.collection=state.collection.filter(x=>!ids.has(x.id));state.balance+=total;
+    items.forEach(x=>state.sales.unshift({plate:x.plate,region:x.region,tier:x.tier,value:x.value,date:Date.now()}));
+    save();render();notify("Продано номеров: "+items.length+" на "+money(total));
   }
   function sellDuplicates(){
     const seen=new Set(),dupes=[];
@@ -260,24 +285,10 @@
   }
   function renderUpgrades(){
     const luckLevel=Math.min(5,Math.max(0,Number(state.luckLevel)||0));
-    const autoLevel=Math.min(3,Math.max(0,Number(state.autoTapLevel)||0));
     $("luck-level").textContent="×"+LUCK_MULTIPLIERS[luckLevel];
     $("luck-description").textContent=luckLevel===5?"Максимальный уровень удачи.":"Следующий уровень: ×"+LUCK_MULTIPLIERS[luckLevel+1]+" — повышает вероятность редких номеров.";
     $("buy-luck").textContent=luckLevel===5?"МАКС":"Улучшить · "+money(LUCK_COSTS[luckLevel]);
     $("buy-luck").disabled=luckLevel===5;
-    $("autotap-level").textContent=(AUTOTAP_INTERVALS[autoLevel]/1000).toFixed(2).replace(".",",")+" сек.";
-    $("autotap-description").textContent=autoLevel===3?"Максимальная скорость автотапа.":"Следующий уровень: один запуск каждые "+(AUTOTAP_INTERVALS[autoLevel+1]/1000).toFixed(2).replace(".",",")+" сек.";
-    $("buy-autotap").textContent=autoLevel===3?"МАКС":"Ускорить · "+money(AUTOTAP_COSTS[autoLevel]);
-    $("buy-autotap").disabled=autoLevel===3;
-    $("toggle-autotap").textContent=state.autoTapEnabled?"Выключить автотап":"Включить автотап";
-    $("toggle-autotap").classList.toggle("active",state.autoTapEnabled);
-  }
-  function configureAutoTap(){
-    if(autoTapTimer){clearInterval(autoTapTimer);autoTapTimer=null;}
-    if(state.autoTapEnabled && $("auth-gate").hidden){
-      autoTapTimer=setInterval(()=>{if(!document.hidden&&!$("spin-button").disabled)spin();},AUTOTAP_INTERVALS[state.autoTapLevel]||1000);
-    }
-    if($("toggle-autotap"))renderUpgrades();
   }
   function render(){
     $("balance").textContent=money(state.balance);$("collection-count").textContent=state.collection.length+" "+plural(state.collection.length,["номер","номера","номеров"]);
@@ -293,7 +304,7 @@
     if(sort==="rarity")items.sort((a,b)=>tiers.findIndex(t=>t.name===b.tier)-tiers.findIndex(t=>t.name===a.tier));
     if(sort==="new")items.sort((a,b)=>b.created-a.created);
     $("empty-state").style.display=items.length?"none":"block";
-    $("collection-grid").innerHTML=items.map(item=>`<article class="number-card rarity-${item.key}" style="--tier:${item.color}"><div class="card-top"><span class="tier-tag">${item.tier}</span><span class="card-id">#${String(item.id).padStart(4,"0")}</span></div><div class="small-plate">${item.plate}<small style="font:9px Manrope;margin-left:7px;border-left:1px solid #17212a;padding-left:5px">${item.region}</small></div><div class="card-bottom"><strong class="card-price">${money(item.value)}</strong><button class="sell-button" data-sell="${item.id}">Продать</button></div></article>`).join("");
+    $("collection-grid").innerHTML=items.map(item=>`<article class="number-card rarity-${item.key}" style="--tier:${item.color}"><div class="card-top"><span class="tier-tag">${item.tier}</span><span class="card-id">#${String(item.id).padStart(4,"0")}</span></div><div class="small-plate">${item.plate}<small style="font:9px Manrope;margin-left:7px;border-left:1px solid #17212a;padding-left:5px">${item.region}</small></div><p class="number-reason">${escapeHtml(item.reason||item.pattern||"Цена зависит от редкости комбинации")}</p><div class="card-bottom"><strong class="card-price">${money(item.value)}</strong><div class="card-actions"><button class="favorite-button ${item.favorite?"is-favorite":""}" data-favorite="${item.id}">${item.favorite?"★":"☆"}</button>${item.favorite?'<span class="protected-label">Защищён</span>':'<button class="sell-button" data-sell="'+item.id+'">Продать</button>'}</div></div></article>`).join("");
     renderUpgrades();
     $("sales-count").textContent=state.sales.length+" "+plural(state.sales.length,["операция","операции","операций"]);
     $("history-list").innerHTML=state.sales.length?state.sales.slice(0,30).map(s=>`<div class="history-row"><div><strong>${s.plate} · ${s.region}</strong><small>${s.tier} · ${new Date(s.date).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div><span class="history-amount">+${money(s.value)}</span></div>`).join(""):'<div class="history-empty">Здесь появятся твои сделки</div>';
@@ -334,8 +345,7 @@
         $("auth-gate").hidden=false;
         document.body.classList.add("auth-required");
         $("spin-button").disabled=true;
-        configureAutoTap();
-      }
+        }
     });
     try{
       // Supabase сам обработает OAuth callback благодаря detectSessionInUrl:true.
@@ -491,16 +501,6 @@
     if(state.balance<price){notify("Недостаточно денег для улучшения удачи");return;}
     state.balance-=price;state.luckLevel=level+1;save();render();notify("Удача улучшена до ×"+LUCK_MULTIPLIERS[state.luckLevel]);
   });
-  $("buy-autotap").addEventListener("click",()=>{
-    const level=state.autoTapLevel||0;if(level>=3)return;
-    const price=AUTOTAP_COSTS[level];
-    if(state.balance<price){notify("Недостаточно денег для улучшения автотапа");return;}
-    state.balance-=price;state.autoTapLevel=level+1;save();configureAutoTap();render();notify("Автотап ускорен");
-  });
-  $("toggle-autotap").addEventListener("click",()=>{
-    state.autoTapEnabled=!state.autoTapEnabled;save();configureAutoTap();
-    notify(state.autoTapEnabled?"Автотап включён":"Автотап выключен");
-  });
   $("profile-button").addEventListener("click",()=>{
     $("profile-name").value=playerName;
     $("profile-preview").innerHTML=avatarData?'<img src="'+avatarData+'" alt="Аватар">':'<span>'+(escapeHtml(playerName.charAt(0).toUpperCase()||"И"))+'</span>';
@@ -548,7 +548,7 @@
     if(!accepted)return;
     currentUser=null;adminUser=null;playerReady=false;
     if(supabase) await supabase.auth.signOut();
-    state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;state.autoTapLevel=0;state.autoTapEnabled=false;configureAutoTap();
+    state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;
     localStorage.removeItem(STORAGE_KEY);
     save();
     $("plate-main").textContent="А000АА";$("plate-region").textContent="77";
@@ -655,8 +655,17 @@
   $("win-close").addEventListener("click",()=>{$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);});
   $("win-overlay").addEventListener("click",e=>{if(e.target===$("win-overlay")){$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);}});
   document.addEventListener("keydown",e=>{if(e.key==="Escape")$("win-overlay").classList.remove("visible");});
-  $("collection-grid").addEventListener("click",e=>{const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
+  $("collection-grid").addEventListener("click",e=>{const fav=e.target.closest("[data-favorite]");if(fav){toggleFavorite(Number(fav.dataset.favorite));return;}const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
+  $("sell-all").addEventListener("click",sellAll);
+  $("menu-button").addEventListener("click",()=>$("menu-modal").hidden=false);
+  $("menu-close").addEventListener("click",()=>$("menu-modal").hidden=true);
+  $("menu-modal").addEventListener("click",e=>{if(e.target===$("menu-modal"))$("menu-modal").hidden=true;});
+  $("menu-collection").addEventListener("click",()=>{$("menu-modal").hidden=true;$("collection-modal").hidden=false;});
+  $("menu-upgrades").addEventListener("click",()=>{$("menu-modal").hidden=true;$("upgrade-modal").hidden=false;renderUpgrades();});
+  $("upgrade-close").addEventListener("click",()=>$("upgrade-modal").hidden=true);
+  $("upgrade-modal").addEventListener("click",e=>{if(e.target===$("upgrade-modal"))$("upgrade-modal").hidden=true;});
+  $("home-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);window.scrollTo({top:0,behavior:"smooth"});});
   $("sort-select").addEventListener("change",render);
   $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция, история и улучшения будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;state.autoTapLevel=0;state.autoTapEnabled=false;configureAutoTap();save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
   $("player-name").value=playerName;
