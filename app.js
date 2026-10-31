@@ -146,20 +146,18 @@
     for(let i=0;i<tiers.length;i++){roll-=effectiveWeights[i];if(roll<0)return tiers[i];}
     return tiers[0];
   }
-  function patternScore(digits, chars){
-    let score=0;
-    if(digits[0]===digits[1]&&digits[1]===digits[2]) score+=5;
-    else if(digits[0]===digits[1]||digits[1]===digits[2]||digits[0]===digits[2]) score+=2;
-    if(digits==="123"||digits==="321"||digits==="777"||digits==="001"||digits==="007") score+=3;
-    if(chars[0]===chars[1]&&chars[1]===chars[2]) score+=4;
-    else if(chars[0]===chars[1]||chars[1]===chars[2]||chars[0]===chars[2]) score+=1;
-    return score;
+  function patternDetails(digits, chars){
+    const digitPairs=digits[0]===digits[1]||digits[1]===digits[2]||digits[0]===digits[2];
+    const letterPairs=chars[0]===chars[1]||chars[1]===chars[2]||chars[0]===chars[2];
+    const digitTriple=digits[0]===digits[1]&&digits[1]===digits[2];
+    const letterTriple=chars[0]===chars[1]&&chars[1]===chars[2];
+    const sequence=["123","234","345","456","567","678","789","987","876","765","654","543","432","321"].includes(digits);
+    return {digitPairs,letterPairs,digitTriple,letterTriple,sequence,score:(digitPairs?2:0)+(letterPairs?2:0)+(digitTriple?2:0)+(letterTriple?2:0)+(sequence?1:0),label:[digitTriple?"три одинаковые цифры":digitPairs?"две одинаковые цифры":"",letterTriple?"три одинаковые буквы":letterPairs?"две одинаковые буквы":"",sequence?"последовательность":""] .filter(Boolean).join(" · ")};
   }
   function makeNumber(){
-    const tier=chooseTier();
+    const baseTier=chooseTier();
     let digits, chars, region;
-    if(tier.key==="legendary"){
-      // Легендарные находки — только узнаваемые «зеркальные» номера с тройными цифрами и буквами.
+    if(baseTier.key==="legendary"){
       const premiumDigits=["777","888","999","111","222","333","555"];
       const premiumLetters=["А","М","О","Х","Т","Е","К","С"];
       const letter=premiumLetters[Math.floor(Math.random()*premiumLetters.length)];
@@ -171,12 +169,38 @@
       chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]);
       region=regions[Math.floor(Math.random()*regions.length)].trim();
     }
-    const score=patternScore(digits,chars);
-    let value=Math.round((tier.min+Math.random()*(tier.max-tier.min))*(1+score*.12)/50)*50;
+    const pattern=patternDetails(digits,chars);
+    const upgrade=(pattern.digitPairs?1:0)+(pattern.letterPairs?1:0)+(pattern.digitTriple?1:0)+(pattern.letterTriple?1:0);
+    const tierIndex=Math.min(4,tiers.findIndex(t=>t.key===baseTier.key)+upgrade);
+    const tier=tiers[tierIndex];
+    const premiumMultiplier=1+(pattern.digitPairs?0.65:0)+(pattern.letterPairs?0.65:0)+(pattern.digitTriple?1.1:0)+(pattern.letterTriple?1.1:0)+(pattern.sequence?0.35:0);
+    let value=Math.round((tier.min+Math.random()*(tier.max-tier.min))*premiumMultiplier/50)*50;
     if(tier.key==="legendary") value=Math.max(15000000,value);
-    return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now()};
+    return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label};
   }
-  function notify(message){const el=$("toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2400);}
+  function showWinAnimation(item){
+    if(tierRank(item.key)<2 && !item.pattern)return;
+    const overlay=$("win-overlay");
+    overlay.className="win-overlay rarity-"+item.key+" visible";
+    $("win-tier").textContent=item.tier.toUpperCase();
+    $("win-plate").textContent=item.plate;
+    $("win-region").textContent=item.region;
+    $("win-pattern").textContent=item.pattern||"Особенная комбинация";
+    const price=$("win-price");
+    const target=item.value;
+    const duration=1500,start=performance.now();
+    function frame(now){
+      const progress=Math.min(1,(now-start)/duration);
+      const eased=1-Math.pow(1-progress,3);
+      price.textContent=money(target*eased);
+      if(progress<1 && overlay.classList.contains("visible"))requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    clearTimeout(winOverlayTimer);
+    winOverlayTimer=setTimeout(()=>overlay.classList.remove("visible"),4200);
+  }
+  let winOverlayTimer=null;
+    function notify(message){const el=$("toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2400);}
   function makeForcedNumber(forced){
     const plate=String(forced.plate||"").toUpperCase();
     const match=plate.match(/^([АВЕКМНОРСТУХ])(\d{3})([АВЕКМНОРСТУХ]{2})$/);
@@ -212,7 +236,7 @@
         $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=forcedNumber?"Администратор назначил этот номер":"Номер добавлен в твою коллекцию";
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
-        render();notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
+        render();showWinAnimation(item);notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
       }
     },60);
   }
@@ -628,6 +652,9 @@
     $("forced-status").textContent="Назначенный номер отменён.";
     notify("Настройка выпадения отменена");
   });
+  $("win-close").addEventListener("click",()=>{$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);});
+  $("win-overlay").addEventListener("click",e=>{if(e.target===$("win-overlay")){$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);}});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")$("win-overlay").classList.remove("visible");});
   $("collection-grid").addEventListener("click",e=>{const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
   $("sort-select").addEventListener("change",render);
