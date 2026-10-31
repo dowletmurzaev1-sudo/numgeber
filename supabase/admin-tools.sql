@@ -65,7 +65,7 @@ begin
     now()
   )
   on conflict (user_id) do update
-  set game_state = jsonb_set(coalesce(public.nomgen_saves.game_state, '{}'::jsonb), '{balance}', to_jsonb(new_balance), true),
+  set game_state = jsonb_set(coalesce(nomgen_saves.game_state, '{}'::jsonb), '{balance}', to_jsonb(new_balance), true),
       updated_at = now();
 end;
 $$;
