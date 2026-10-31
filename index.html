@@ -75,12 +75,14 @@
         <p class="admin-warning">Измени веса редкостей. Чем выше число, тем чаще выпадает этот уровень. Итоговые шансы автоматически нормализуются до 100%.</p>
         <div id="odds-controls" class="odds-controls"></div>
         <div class="admin-actions"><button id="apply-odds" class="spin-button">Сохранить шансы</button><button id="reset-odds" class="text-button">Вернуть стандартные</button></div>
-        <p id="odds-status" class="admin-status">Настройки действуют в этом браузере.</p>
+        <p id="odds-status" class="admin-status">Глобальные настройки применяются ко всем игрокам после подключения Supabase.</p>
       </div>
     </section>
     <footer><span class="footer-brand">НОМГЕН</span><span>Крути. Собирай. Богатей. Найди номер мечты!</span><button id="reset-game" class="reset-button">Сбросить прогресс</button></footer>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
