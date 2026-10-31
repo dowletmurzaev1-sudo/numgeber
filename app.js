@@ -153,7 +153,7 @@
   function numberReason(digits,chars,region,pattern){
     const reasons=[];
     if(["777","999","001","002","003","004","005"].includes(region)) reasons.push("Престижный региональный код "+region);
-    if(["001","002","003","004","005"].includes(digits)) reasons.push("Служебно выглядящая комбинация "+digits ( " — игровая оценка, не подтверждение принадлежности госоргану"));
+    if(["001","002","003","004","005"].includes(digits)) reasons.push("Служебно выглядящая комбинация "+digits+" — игровая оценка, не подтверждение принадлежности госоргану");
     if(chars[0]===chars[1]&&chars[1]===chars[2]) reasons.push("Три одинаковые буквы — коллекционная серия");
     else if(chars[0]===chars[1]||chars[1]===chars[2]||chars[0]===chars[2]) reasons.push("Повторяющиеся буквы — востребованная комбинация");
     if(digits[0]===digits[1]&&digits[1]===digits[2]) reasons.push("Три одинаковые цифры — «тройной» номер");
