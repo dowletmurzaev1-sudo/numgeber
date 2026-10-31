@@ -9,6 +9,10 @@
   let hasCustomWeights = false;
   let players = [];
   let supabase = null;
+  let ysdk = null;
+  let yandexPlayer = null;
+  let isYandexGames = false;
+  let yandexSaveQueue = Promise.resolve();
   let adminUser = null;
   let currentUser = null;
   let playerReady = false;
@@ -41,6 +45,12 @@
   }
   function save(){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    if(yandexPlayer && isYandexGames) {
+      yandexSaveQueue=yandexSaveQueue.then(()=>yandexPlayer.setData({
+        nomgenState:state,
+        nomgenPlayerName:playerName
+      })).catch(error=>console.warn("Yandex cloud save failed:",error));
+    }
     if(currentUser && supabase) {
       const rarest=[...state.collection].sort((a,b)=>tierRank(b.key)-tierRank(a.key)||b.value-a.value)[0]||null;
       saveQueue=saveQueue.then(async()=>{
@@ -320,6 +330,47 @@
     const total=weights.reduce((a,b)=>a+b,0);
     host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(weights[i]||0)+'"><b>'+((total?weights[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
   }
+  async function initGamePlatform(){
+    try{
+      if(window.nomgenYandexSdkReady) await window.nomgenYandexSdkReady;
+      if(typeof YaGames!=="undefined"){
+        ysdk=await YaGames.init();
+        isYandexGames=true;
+        try{
+          yandexPlayer=await ysdk.getPlayer();
+          const cloud=await yandexPlayer.getData(["nomgenState","nomgenPlayerName"]);
+          if(cloud?.nomgenState && typeof cloud.nomgenState.balance==="number"){
+            Object.assign(state,cloud.nomgenState);
+            localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+          }
+          const platformName=yandexPlayer.getName?.();
+          playerName=(cloud?.nomgenPlayerName||platformName||localStorage.getItem("nomgen-player-name")||"Игрок").slice(0,20);
+          localStorage.setItem("nomgen-player-name",playerName);
+          $("player-name").value=playerName;
+        }catch(error){
+          console.warn("Yandex player data unavailable; using local save:",error);
+        }
+        // В Яндекс Играх не требуем отдельный Google-вход.
+        $("auth-gate").hidden=true;
+        $("google-login").hidden=true;
+        $("guest-login").hidden=true;
+        document.body.classList.remove("auth-required");
+        render();
+        renderUpgrades();
+        renderProfileButton();
+        showGame();
+        ysdk.features?.LoadingAPI?.ready();
+        ysdk.features?.GameplayAPI?.start();
+        ysdk.on?.("game_api_pause",()=>{stopAmbientMusic();ysdk.features?.GameplayAPI?.stop();});
+        ysdk.on?.("game_api_resume",()=>{ysdk.features?.GameplayAPI?.start();});
+        save();
+        return;
+      }
+    }catch(error){
+      console.warn("Yandex Games SDK initialization failed:",error);
+    }
+    initSupabase();
+  }
   async function initSupabase(){
     const cfg=window.NOMGEN_SUPABASE||{};
     if(!window.supabase||!cfg.url||!cfg.anonKey||cfg.url.includes("YOUR_")||cfg.anonKey.includes("YOUR_")){
@@ -574,6 +625,7 @@
     if(error){localStorage.removeItem("nomgen-oauth-pending");$("auth-error").textContent="Ошибка входа: "+error.message;$("google-login").disabled=false;}
   });
   async function logoutAccount(){
+    if(isYandexGames){notify("Профиль Яндекс Игр управляется платформой");return;}
     if(currentUser&&supabase){
       const {error}=await supabase.auth.signOut();
       if(error){notify("Не удалось выйти: "+error.message);return;}
@@ -680,5 +732,5 @@
   renderUpgrades();
   
   renderProfileButton();
-  initSupabase();
+  initGamePlatform();
 })();
