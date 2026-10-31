@@ -232,7 +232,10 @@
     supabase.auth.onAuthStateChange((event,session)=>{
       if((event==="SIGNED_IN"||event==="INITIAL_SESSION"||event==="TOKEN_REFRESHED")&&session?.user){
         showGame();
-        if(event==="SIGNED_IN")showRegistrationSuccess();
+        if(event==="SIGNED_IN"||(event==="INITIAL_SESSION"&&localStorage.getItem("nomgen-oauth-pending")==="1")){
+          localStorage.removeItem("nomgen-oauth-pending");
+          showRegistrationSuccess();
+        }
         setTimeout(()=>loadPlayer(session.user),0);
       }
       if(event==="SIGNED_OUT"){
@@ -347,8 +350,9 @@
   $("google-login").addEventListener("click",async()=>{
     if(!supabase){$("auth-error").textContent="Supabase не настроен.";return;}
     $("google-login").disabled=true;$("auth-error").textContent="Переход к Google…";
+    localStorage.setItem("nomgen-oauth-pending","1");
     const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+window.location.pathname}});
-    if(error){$("auth-error").textContent="Ошибка входа: "+error.message;$("google-login").disabled=false;}
+    if(error){localStorage.removeItem("nomgen-oauth-pending");$("auth-error").textContent="Ошибка входа: "+error.message;$("google-login").disabled=false;}
   });
   $("logout-button").addEventListener("click",async()=>{if(supabase)await supabase.auth.signOut();});
   $("spin-button").addEventListener("click",spin);
