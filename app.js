@@ -153,12 +153,13 @@
   function numberReason(digits,chars,region,pattern){
     const reasons=[];
     if(["777","999","001","002","003","004","005"].includes(region)) reasons.push("Престижный региональный код "+region);
-    if(["777","001","002","003","111","222","333","555","888","999"].includes(digits)) reasons.push("Красивый цифровой ряд "+digits);
+    if(["001","002","003","004","005"].includes(digits)) reasons.push("Служебно выглядящая комбинация "+digits ( " — игровая оценка, не подтверждение принадлежности госоргану"));
     if(chars[0]===chars[1]&&chars[1]===chars[2]) reasons.push("Три одинаковые буквы — коллекционная серия");
     else if(chars[0]===chars[1]||chars[1]===chars[2]||chars[0]===chars[2]) reasons.push("Повторяющиеся буквы — востребованная комбинация");
     if(digits[0]===digits[1]&&digits[1]===digits[2]) reasons.push("Три одинаковые цифры — «тройной» номер");
     else if(pattern.digitPairs) reasons.push("Повторяющиеся цифры повышают коллекционную ценность");
     if(pattern.sequence) reasons.push("Последовательность цифр — легко запоминаемый номер");
+    if(["777","888","999"].includes(digits)||pattern.digitTriple||pattern.letterTriple) reasons.push("«Блатная» / статусная комбинация — высокая коллекционная привлекательность");
     if(!reasons.length) reasons.push("Цена определяется редкостью выпадения и сочетанием символов");
     return reasons.join(" · ");
   }
@@ -275,7 +276,7 @@
     const seen=new Set(),dupes=[];
     [...state.collection].sort((a,b)=>a.created-b.created).forEach(item=>{
       const key=item.plate+"-"+item.region;
-      if(seen.has(key))dupes.push(item);else seen.add(key);
+      if(seen.has(key)){if(!item.favorite)dupes.push(item);}else seen.add(key);
     });
     if(!dupes.length){notify("Дубликатов пока нет");return;}
     const ids=new Set(dupes.map(x=>x.id));let total=0;
