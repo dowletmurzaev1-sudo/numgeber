@@ -13,6 +13,7 @@
   let playerReady = false;
   let saveQueue = Promise.resolve();
   let playerName = localStorage.getItem("nomgen-player-name") || "Игрок";
+  let avatarData = localStorage.getItem("nomgen-avatar") || "";
   const letters = ["А","В","Е","К","М","Н","О","Р","С","Т","У","Х"];
   const regions = ["77","97","99","177","197","199","777","50","90","150","750","78","98","178","198","23","93","123","116","716","02","102","54","154","66","96","196","74","174","52","152","63","163","61","161"];
   const tiers = [
@@ -58,11 +59,16 @@
     $("spin-button").disabled=false;
   }
   async function loadPlayer(user){
+    if(!user)return;
+    if(currentUser?.id===user.id && playerReady){showGame();return;}
     currentUser=user;
+    avatarData=user.user_metadata?.avatar_data||"";
+    if(avatarData)localStorage.setItem("nomgen-avatar",avatarData);
+    renderProfileButton();
     const {data:isAdmin}=await supabase.rpc("is_nomgen_admin");
     if(isAdmin){adminUser=user;$("admin-content").hidden=false;renderOdds();}
     const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
-    if(error){$("auth-error").textContent="Не удалось загрузить профиль: "+error.message;return;}
+    if(error){$("auth-error").textContent="Не удалось загрузить прогресс: "+error.message;render();showGame();return;}
     if(data?.game_state && typeof data.game_state.balance==="number"){
       Object.assign(state,data.game_state);
       const {data:profile}=await supabase.from("nomgen_players").select("display_name").eq("user_id",user.id).maybeSingle();
@@ -74,6 +80,7 @@
     localStorage.setItem("nomgen-player-name",playerName);
     $("player-name").value=playerName;
     render();
+    renderProfileButton();
     showGame();
     await refreshLeaderboard();
   }
@@ -212,19 +219,16 @@
     supabase.channel("nomgen-global-settings").on("postgres_changes",{event:"UPDATE",schema:"public",table:"nomgen_settings",filter:"id=eq.1"},payload=>{
       if(Array.isArray(payload.new.weights)){weights=payload.new.weights.map(Number);renderOdds();}
     }).subscribe();
-    const {data:sessionData}=await supabase.auth.getSession();
-    if(sessionData.session){
-      // Если пользователь уже вошёл ранее, сразу загружаем его облачный прогресс
-      // и закрываем окно выбора режима после успешной загрузки.
-      await loadPlayer(sessionData.session.user);
-    }else{
-      $("auth-gate").hidden=false;
-      document.body.classList.add("auth-required");
-      $("spin-button").disabled=true;
-    }
+    // Слушатель ставим до getSession: OAuth-возврат может прийти раньше чтения сессии.
     supabase.auth.onAuthStateChange((event,session)=>{
-      if((event==="SIGNED_IN"||event==="INITIAL_SESSION")&&session?.user&&!currentUser){
-        setTimeout(()=>loadPlayer(session.user),0);
+      if((event==="SIGNED_IN"||event==="INITIAL_SESSION"||event==="TOKEN_REFRESHED")&&session?.user){
+        $("auth-gate").hidden=true;
+        document.body.classList.remove("auth-required");
+        setTimeout(()=>loadPlayer(session.user).catch(err=>{
+          console.error("Profile loading failed:",err);
+          $("auth-error").textContent="Не удалось загрузить данные: "+(err.message||err);
+          render();showGame();
+        }),0);
       }
       if(event==="SIGNED_OUT"){
         currentUser=null;playerReady=false;
@@ -233,8 +237,67 @@
         $("spin-button").disabled=true;
       }
     });
+    const {data:sessionData}=await supabase.auth.getSession();
+    if(sessionData?.session?.user){
+      $("auth-gate").hidden=true;
+      document.body.classList.remove("auth-required");
+      await loadPlayer(sessionData.session.user);
+    }else{
+      $("auth-gate").hidden=false;
+      document.body.classList.add("auth-required");
+      $("spin-button").disabled=true;
+    }
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
+  function renderProfileButton(){
+    const img=$("profile-avatar");
+    if(!img)return;
+    const source=avatarData||(currentUser?.user_metadata?.avatar_url||"");
+    img.innerHTML=source?'<img src="'+source+'" alt="Аватар">':'<span>'+(escapeHtml((playerName||"И").trim().charAt(0).toUpperCase()||"И"))+'</span>';
+    $("profile-button").setAttribute("aria-label","Профиль: "+playerName);
+  }
+  $("profile-button").addEventListener("click",()=>{
+    $("profile-name").value=playerName;
+    $("profile-preview").innerHTML=avatarData?'<img src="'+avatarData+'" alt="Аватар">':'<span>'+(escapeHtml(playerName.charAt(0).toUpperCase()||"И"))+'</span>';
+    $("profile-modal").hidden=false;
+  });
+  $("profile-close").addEventListener("click",()=>$("profile-modal").hidden=true);
+  $("profile-modal").addEventListener("click",e=>{if(e.target===$("profile-modal"))$("profile-modal").hidden=true;});
+  $("avatar-file").addEventListener("change",()=>{
+    const file=$("avatar-file").files?.[0];if(!file)return;
+    if(!file.type.startsWith("image/")){notify("Выбери файл изображения");return;}
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement("canvas");canvas.width=160;canvas.height=160;
+        const ctx=canvas.getContext("2d");const side=Math.min(img.width,img.height);
+        ctx.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,160,160);
+        avatarData=canvas.toDataURL("image/jpeg",.72);
+        $("profile-preview").innerHTML='<img src="'+avatarData+'" alt="Аватар">';
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  $("profile-save").addEventListener("click",async()=>{
+    const name=$("profile-name").value.trim().slice(0,20);
+    if(!name){notify("Введи имя профиля");return;}
+    playerName=name;localStorage.setItem("nomgen-player-name",playerName);
+    localStorage.setItem("nomgen-avatar",avatarData);
+    if(currentUser&&supabase){
+      const {error}=await supabase.auth.updateUser({data:{display_name:playerName,avatar_data:avatarData}});
+      if(error){notify("Не удалось сохранить аватар в аккаунте: "+error.message);return;}
+    }
+    $("player-name").value=playerName;
+    await persistProfile();renderProfileButton();$("profile-modal").hidden=true;
+    notify("Профиль обновлён");
+  });
+  $("avatar-remove").addEventListener("click",()=>{
+    avatarData="";localStorage.removeItem("nomgen-avatar");
+    $("avatar-file").value="";
+    $("profile-preview").innerHTML='<span>'+(escapeHtml(playerName.charAt(0).toUpperCase()||"И"))+'</span>';
+  });
   $("guest-login").addEventListener("click",async()=>{
     const accepted=confirm("ВНИМАНИЕ! Гостевой режим начнётся с нуля. Весь текущий прогресс на этом устройстве — баланс, коллекция и история — будет сброшен. Прогресс гостя не сохраняется в Google-аккаунте. Продолжить?");
     if(!accepted)return;
@@ -249,7 +312,7 @@
     $("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";
     $("result-info").className="result-info";
     $("player-name").value="Игрок";
-    playerName="Игрок";localStorage.setItem("nomgen-player-name",playerName);
+    playerName="Игрок";avatarData="";localStorage.removeItem("nomgen-avatar");renderProfileButton();localStorage.setItem("nomgen-player-name",playerName);
     render();showGame();
   });
   $("google-login").addEventListener("click",async()=>{
@@ -296,5 +359,6 @@
   $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция и история будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
   $("player-name").value=playerName;
   render();
+  renderProfileButton();
   initSupabase();
 })();
