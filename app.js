@@ -410,7 +410,7 @@
     if(!AudioCtx){notify("Этот браузер не поддерживает фоновую музыку");return;}
     if(!musicContext){
       musicContext=new AudioCtx();
-      musicMaster=musicContext.createGain();musicMaster.gain.value=musicVolume*0.12;musicMaster.connect(musicContext.destination);
+      musicMaster=musicContext.createGain();musicMaster.gain.value=musicVolume*0.4;musicMaster.connect(musicContext.destination);
       const filter=musicContext.createBiquadFilter();filter.type="lowpass";filter.frequency.value=1800;filter.connect(musicMaster);
       const notes=[164.81,207.65,246.94,329.63];
       notes.forEach((hz,i)=>{
@@ -433,7 +433,7 @@
         const [midi,beats]=melody[noteIndex],now=musicContext.currentTime;
         const osc=musicContext.createOscillator(),gain=musicContext.createGain();
         osc.type="sine";osc.frequency.value=440*Math.pow(2,(midi-69)/12);
-        gain.gain.setValueAtTime(0.0001,now);gain.gain.linearRampToValueAtTime(0.22,now+0.08);
+        gain.gain.setValueAtTime(0.0001,now);gain.gain.linearRampToValueAtTime(0.38,now+0.08);
         gain.gain.setTargetAtTime(0.0001,now+beats*0.48,0.16);
         osc.connect(gain);gain.connect(filter);osc.start(now);osc.stop(now+beats*0.48+0.7);
         noteIndex=(noteIndex+1)%melody.length;
@@ -441,7 +441,7 @@
       playNote();musicMelodyTimer=setInterval(playNote,480);
     }
     try{await musicContext.resume();}catch(e){}
-    if(musicMaster)musicMaster.gain.setTargetAtTime(musicVolume*0.12,musicContext.currentTime,0.15);
+    if(musicMaster)musicMaster.gain.setTargetAtTime(musicVolume*0.4,musicContext.currentTime,0.15);
   }
   document.addEventListener("pointerdown",()=>{if(musicEnabled&&!musicContext)startAmbientMusic();},{once:true});
   $("music-toggle").addEventListener("click",async()=>{
@@ -451,7 +451,7 @@
   });
   $("music-volume").addEventListener("input",e=>{
     musicVolume=Number(e.target.value)/100;localStorage.setItem("nomgen-music-volume",String(musicVolume));
-    if(musicMaster&&musicContext)musicMaster.gain.setTargetAtTime(musicVolume*0.12,musicContext.currentTime,0.08);
+    if(musicMaster&&musicContext)musicMaster.gain.setTargetAtTime(musicVolume*0.4,musicContext.currentTime,0.08);
     syncMusicControls();
   });
   document.addEventListener("visibilitychange",()=>{if(document.hidden&&musicContext?.state==="running")musicContext.suspend();else if(!document.hidden&&musicEnabled&&musicContext)musicContext.resume().catch(()=>{});});
