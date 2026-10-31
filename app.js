@@ -72,6 +72,8 @@
     try{
       const {data:isAdmin,error:adminError}=await supabase.rpc("is_nomgen_admin");
       if(!adminError&&isAdmin){adminUser=user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}
+      const {data:userWeights,error:weightsError}=await supabase.rpc("get_my_rare_weights");
+      if(!weightsError&&Array.isArray(userWeights)&&userWeights.length===5&&userWeights.some(x=>Number(x)>0))weights=userWeights.map(Number);
       const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
       if(error)throw error;
       if(data?.game_state && typeof data.game_state.balance==="number"){
@@ -233,8 +235,13 @@
       $("odds-status").textContent="Supabase не настроен. Заполни supabase-config.js и выполни supabase/schema.sql.";
       $("admin-toggle").disabled=true;return;
     }
+    // Переносим ранее сохранённую сессию на стандартный ключ Supabase.
+    const defaultAuthKey="sb-ctuevujtnzjotwwwwszb-auth-token";
+    if(!localStorage.getItem(defaultAuthKey)&&localStorage.getItem("nomgen-auth-v1")){
+      localStorage.setItem(defaultAuthKey,localStorage.getItem("nomgen-auth-v1"));
+    }
     supabase=window.supabase.createClient(cfg.url,cfg.anonKey,{
-      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,flowType:"pkce",storage:window.localStorage,storageKey:"nomgen-auth-v1"}
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"}
     });
     // Слушатель авторизации регистрируется до любых сетевых запросов.
     supabase.auth.onAuthStateChange((event,session)=>{
@@ -254,25 +261,7 @@
       }
     });
     try{
-      // На мобильных браузерах явно обмениваем OAuth-код на сессию.
-      // Автоматическое обнаружение кода отключено выше, чтобы обмен не запускался дважды.
-      const callbackUrl=new URL(window.location.href);
-      const oauthCode=callbackUrl.searchParams.get("code");
-      if(oauthCode){
-        const {error:exchangeError}=await supabase.auth.exchangeCodeForSession(oauthCode);
-        if(exchangeError)throw exchangeError;
-        callbackUrl.searchParams.delete("code");
-        window.history.replaceState({},document.title,callbackUrl.pathname+callbackUrl.search+callbackUrl.hash);
-      }else if(callbackUrl.hash.includes("access_token=")&&callbackUrl.hash.includes("refresh_token=")){
-        // Резервная обработка токенов в URL-фрагменте на мобильных браузерах.
-        const hashParams=new URLSearchParams(callbackUrl.hash.slice(1));
-        const {error:hashError}=await supabase.auth.setSession({
-          access_token:hashParams.get("access_token"),
-          refresh_token:hashParams.get("refresh_token")
-        });
-        if(hashError)throw hashError;
-        window.history.replaceState({},document.title,callbackUrl.pathname+callbackUrl.search);
-      }
+      // Supabase сам обработает OAuth callback благодаря detectSessionInUrl:true.
       const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
       if(sessionError)throw sessionError;
       if(sessionData?.session?.user){
@@ -310,9 +299,14 @@
     const {data,error}=await supabase.rpc("admin_list_players");
     if(error){host.textContent="Ошибка: "+error.message+" Проверь SQL-файл supabase/admin-tools.sql.";return;}
     const rows=data||[];
-    $("money-player").innerHTML=rows.map(p=>'<option value="'+p.user_id+'">'+escapeHtml(p.display_name||p.email||"Игрок")+' — '+money(Number(p.balance)||0)+'</option>').join("")||'<option value="">Игроков пока нет</option>';
+    const opts=rows.map(p=>'<option value="'+p.user_id+'">'+escapeHtml(p.display_name||p.email||"Игрок")+' — '+money(Number(p.balance)||0)+'</option>').join("")||'<option value="">Игроков пока нет</option>';
+    $("money-player").innerHTML=opts;
+    $("odds-player").innerHTML=rows.map(p=>'<option value="'+p.user_id+'">'+escapeHtml(p.display_name||p.email||"Игрок")+'</option>').join("")||'<option value="">Игроков пока нет</option>';
     host.innerHTML=rows.length?rows.map(p=>'<div class="admin-player-row"><div><strong>'+escapeHtml(p.display_name||"Игрок")+'</strong><small>'+escapeHtml(p.email||p.user_id)+'</small></div><b>'+money(Number(p.balance)||0)+'</b></div>').join(""):'<p class="admin-status">Игроков пока нет.</p>';
-    if(rows.length){$("money-player").value=rows[0].user_id;$("money-balance").value=Number(rows[0].balance)||0;}
+    if(rows.length){
+      $("money-player").value=rows[0].user_id;$("money-balance").value=Number(rows[0].balance)||0;
+      $("odds-player").value=rows[0].user_id;weights=Array.isArray(rows[0].weights)?rows[0].weights.map(Number):[...DEFAULT_WEIGHTS];renderOdds();
+    }
   }
   function selectAdminTab(tab){
     document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.toggle("active",b.dataset.adminTab===tab));
@@ -429,19 +423,24 @@
     if(error){notify("Не удалось изменить баланс: "+error.message);return;}
     notify("Баланс игрока обновлён");await loadAdminPlayers();await refreshLeaderboard();
   });
+  $("odds-player").addEventListener("change",async()=>{
+    const {data,error}=await supabase.rpc("admin_get_player_weights",{target_user_id:$("odds-player").value});
+    if(error){$("odds-status").textContent="Не удалось загрузить шансы: "+error.message;return;}
+    weights=Array.isArray(data)?data.map(Number):[...DEFAULT_WEIGHTS];renderOdds();
+  });
   $("apply-odds").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
     const next=Array.from(document.querySelectorAll("[data-odds]"),el=>Math.max(0,Number(el.value)||0));
     if(next.every(x=>x===0)){notify("Хотя бы один вес должен быть больше нуля");return;}
-    const {error}=await supabase.from("nomgen_settings").update({weights:next,updated_at:new Date().toISOString()}).eq("id",1);
+    const {error}=await supabase.rpc("admin_set_player_weights",{target_user_id:$("odds-player").value,new_weights:next});
     if(error){notify("Не удалось сохранить: "+error.message);return;}
-    weights=next;renderOdds();$("odds-status").textContent="Общие шансы сохранены для всех игроков.";notify("Глобальные шансы обновлены");
+    weights=next;renderOdds();$("odds-status").textContent="Персональные шансы игрока сохранены.";notify("Шансы игрока обновлены");
   });
   $("reset-odds").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
-    const {error}=await supabase.from("nomgen_settings").update({weights:DEFAULT_WEIGHTS,updated_at:new Date().toISOString()}).eq("id",1);
+    const {error}=await supabase.rpc("admin_set_player_weights",{target_user_id:$("odds-player").value,new_weights:DEFAULT_WEIGHTS});
     if(error){notify("Не удалось сбросить: "+error.message);return;}
-    weights=[...DEFAULT_WEIGHTS];renderOdds();$("odds-status").textContent="Стандартные общие шансы восстановлены.";notify("Шансы сброшены");
+    weights=[...DEFAULT_WEIGHTS];renderOdds();$("odds-status").textContent="Стандартные шансы восстановлены для выбранного игрока.";notify("Шансы сброшены");
   });
   $("collection-grid").addEventListener("click",e=>{const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
