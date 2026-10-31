@@ -358,6 +358,7 @@
         $("guest-login").hidden=true;
         $("logout-button").hidden=true;
         $("profile-logout").hidden=true;
+        $("yandex-auth").hidden=!!yandexPlayer?.isAuthorized?.();
         document.body.classList.remove("auth-required");
         render();
         renderUpgrades();
@@ -642,6 +643,29 @@
     $("admin-secret").hidden=true;$("admin-panel").hidden=true;
   }
   $("logout-button").addEventListener("click",logoutAccount);
+  $("yandex-auth").addEventListener("click",async()=>{
+    if(!isYandexGames||!ysdk?.auth?.openAuthDialog)return;
+    const button=$("yandex-auth");button.disabled=true;
+    try{
+      await ysdk.auth.openAuthDialog();
+      yandexPlayer=await ysdk.getPlayer();
+      if(!yandexPlayer.isAuthorized?.()){notify("Вход через Яндекс не выполнен");return;}
+      const cloud=await yandexPlayer.getData(["nomgenState","nomgenPlayerName"]);
+      if(cloud?.nomgenState&&typeof cloud.nomgenState.balance==="number"){
+        Object.assign(state,cloud.nomgenState);
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+      }
+      playerName=(cloud?.nomgenPlayerName||yandexPlayer.getName?.()||playerName).slice(0,20);
+      localStorage.setItem("nomgen-player-name",playerName);
+      $("player-name").value=playerName;
+      $("yandex-auth").hidden=true;
+      render();renderUpgrades();renderProfileButton();save();
+      notify("Вход через Яндекс выполнен");
+    }catch(error){
+      console.warn("Yandex authorization failed:",error);
+      notify("Не удалось выполнить вход через Яндекс");
+    }finally{button.disabled=false;}
+  });
   $("profile-logout").addEventListener("click",logoutAccount);
   $("spin-button").addEventListener("click",spin);
   $("save-player").addEventListener("click",async()=>{
