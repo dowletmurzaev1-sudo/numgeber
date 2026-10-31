@@ -59,6 +59,8 @@
   }
   async function loadPlayer(user){
     currentUser=user;
+    const {data:isAdmin}=await supabase.rpc("is_nomgen_admin");
+    if(isAdmin){adminUser=user;$("admin-content").hidden=false;renderOdds();}
     const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
     if(error){$("auth-error").textContent="Не удалось загрузить профиль: "+error.message;return;}
     if(data?.game_state && typeof data.game_state.balance==="number"){
@@ -211,21 +213,33 @@
       if(Array.isArray(payload.new.weights)){weights=payload.new.weights.map(Number);renderOdds();}
     }).subscribe();
     const {data:sessionData}=await supabase.auth.getSession();
-    if(sessionData.session){
-      const {data:isAdmin}=await supabase.rpc("is_nomgen_admin");
-      if(isAdmin){adminUser=sessionData.session.user;$("admin-content").hidden=false;renderOdds();}
-      await loadPlayer(sessionData.session.user);
-    }else{
-      $("auth-gate").hidden=false;
-      document.body.classList.add("auth-required");
-      $("spin-button").disabled=true;
-    }
+    $("auth-gate").hidden=false;
+    document.body.classList.add("auth-required");
+    $("spin-button").disabled=true;
+    if(sessionData.session) $("auth-error").textContent="Выбери «Войти через Google», чтобы загрузить облачный прогресс.";
     supabase.auth.onAuthStateChange((event,session)=>{
       if(event==="SIGNED_IN"&&session?.user&&!currentUser) setTimeout(()=>loadPlayer(session.user),0);
       if(event==="SIGNED_OUT"){currentUser=null;playerReady=false;$("auth-gate").hidden=false;document.body.classList.add("auth-required");}
     });
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
+  $("guest-login").addEventListener("click",async()=>{
+    const accepted=confirm("ВНИМАНИЕ! Гостевой режим начнётся с нуля. Весь текущий прогресс на этом устройстве — баланс, коллекция и история — будет сброшен. Прогресс гостя не сохраняется в Google-аккаунте. Продолжить?");
+    if(!accepted)return;
+    currentUser=null;adminUser=null;playerReady=false;
+    if(supabase) await supabase.auth.signOut();
+    state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;
+    localStorage.removeItem(STORAGE_KEY);
+    save();
+    $("plate-main").textContent="А000АА";$("plate-region").textContent="77";
+    $("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";
+    $("result-value").textContent="Твоя следующая находка?";
+    $("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";
+    $("result-info").className="result-info";
+    $("player-name").value="Игрок";
+    playerName="Игрок";localStorage.setItem("nomgen-player-name",playerName);
+    render();showGame();
+  });
   $("google-login").addEventListener("click",async()=>{
     if(!supabase){$("auth-error").textContent="Supabase не настроен.";return;}
     $("google-login").disabled=true;$("auth-error").textContent="Переход к Google…";
