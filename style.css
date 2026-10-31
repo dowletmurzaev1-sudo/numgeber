@@ -52,3 +52,23 @@
 .volume-control input{grid-column:1/-1;width:100%;accent-color:var(--lime)}
 .admin-secret[hidden]{display:none}
 @media(max-width:470px){.profile-settings-open{width:100%}}
+
+/* Анимация редкой находки */
+.win-overlay{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:18px;background:#05080de8;backdrop-filter:blur(9px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+.win-overlay.visible{opacity:1;visibility:visible}
+.win-card{--tier:#56a8ff;position:relative;width:min(100%,440px);padding:35px 24px 28px;text-align:center;border:1px solid color-mix(in srgb,var(--tier),transparent 25%);border-radius:20px;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--tier),transparent 82%),#1b222c 65%);box-shadow:0 0 70px color-mix(in srgb,var(--tier),transparent 65%),0 25px 90px #000b;transform:translateY(22px) scale(.92);transition:transform .45s cubic-bezier(.2,.85,.2,1)}
+.win-overlay.visible .win-card{transform:translateY(0) scale(1);animation:win-card-glow 1.8s ease-in-out infinite alternate}
+.win-close{position:absolute;right:13px;top:9px;border:0;background:none;color:#aeb8c4;font-size:28px;cursor:pointer}
+.win-sparkles{color:var(--tier);font-size:24px;letter-spacing:8px;animation:win-sparkle 1.2s ease-in-out infinite alternate}
+.win-caption,.win-price-caption,.win-added{display:block;font-size:9px;font-weight:800;letter-spacing:2px;color:#9aa6b4}
+.win-tier{display:block;margin:9px 0 22px;color:var(--tier);font:clamp(26px,7vw,38px) 'Russo One',sans-serif;text-shadow:0 0 22px color-mix(in srgb,var(--tier),transparent 35%)}
+.win-license{width:min(100%,330px);height:86px;margin:0 auto 16px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(#fff,#e4e9ec);border:5px solid #c4cbd0;border-radius:9px;color:#111820;box-shadow:0 8px 0 #78838c,0 15px 35px #0008}
+.win-license strong{font:clamp(28px,8vw,42px) 'Russo One',sans-serif;letter-spacing:1px}
+.win-license span{font:20px 'Russo One',sans-serif;border-left:2px solid #17212a;padding-left:8px}
+.win-license small{font-size:8px;font-weight:900}
+.win-pattern{min-height:18px;margin:0 0 20px;color:#b8c2ce;font-size:10px}
+.win-price{display:block;margin:7px 0 18px;color:var(--tier);font:clamp(27px,8vw,40px) 'Russo One',sans-serif;font-variant-numeric:tabular-nums}
+.win-added{color:#c6f36b;font-size:8px;letter-spacing:1.4px}
+.win-overlay.rarity-common .win-card{--tier:#aeb8c4}.win-overlay.rarity-rare .win-card{--tier:#56a8ff}.win-overlay.rarity-epic .win-card{--tier:#b78aff}.win-overlay.rarity-mythic .win-card{--tier:#ff9c54}.win-overlay.rarity-legendary .win-card{--tier:#f4d16d}
+@keyframes win-card-glow{from{box-shadow:0 0 35px color-mix(in srgb,var(--tier),transparent 75%),0 25px 90px #000b}to{box-shadow:0 0 85px color-mix(in srgb,var(--tier),transparent 45%),0 25px 90px #000b}}
+@keyframes win-sparkle{from{transform:scale(.9);opacity:.65}to{transform:scale(1.12);opacity:1}}
