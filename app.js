@@ -263,6 +263,15 @@
         if(exchangeError)throw exchangeError;
         callbackUrl.searchParams.delete("code");
         window.history.replaceState({},document.title,callbackUrl.pathname+callbackUrl.search+callbackUrl.hash);
+      }else if(callbackUrl.hash.includes("access_token=")&&callbackUrl.hash.includes("refresh_token=")){
+        // Резервная обработка токенов в URL-фрагменте на мобильных браузерах.
+        const hashParams=new URLSearchParams(callbackUrl.hash.slice(1));
+        const {error:hashError}=await supabase.auth.setSession({
+          access_token:hashParams.get("access_token"),
+          refresh_token:hashParams.get("refresh_token")
+        });
+        if(hashError)throw hashError;
+        window.history.replaceState({},document.title,callbackUrl.pathname+callbackUrl.search);
       }
       const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
       if(sessionError)throw sessionError;
