@@ -43,3 +43,12 @@
 .admin-secret{display:block;margin:18px auto 4px;padding:2px 7px;border:0;background:transparent;color:#68727e;font:9px Manrope,sans-serif;cursor:pointer}
 .admin-panel{margin:8px 0 0}
 @media(max-width:540px){.upgrade-grid{grid-template-columns:1fr}.feature-card{padding:19px}.settings-open{width:32px;height:32px}.topbar{gap:8px}}
+
+/* Профильные настройки звука */
+.profile-settings-open{display:block;margin:0 auto 16px;padding:8px 12px;border:1px solid #465363;border-radius:8px;background:#202732;color:#aeb8c4;font:700 10px Manrope,sans-serif;cursor:pointer}
+.sound-settings{padding:15px;border:1px solid #35404c;border-radius:10px;background:#202732;margin-bottom:18px}
+.sound-settings h3,.upgrade-heading{font:16px 'Russo One',sans-serif;margin:0 0 12px}
+.volume-control{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:13px;color:#aeb8c4;font-size:11px}
+.volume-control input{grid-column:1/-1;width:100%;accent-color:var(--lime)}
+.admin-secret[hidden]{display:none}
+@media(max-width:470px){.profile-settings-open{width:100%}}
