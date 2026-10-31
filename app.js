@@ -226,7 +226,7 @@
       $("admin-toggle").disabled=true;return;
     }
     supabase=window.supabase.createClient(cfg.url,cfg.anonKey,{
-      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,flowType:"pkce"}
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,flowType:"pkce",storage:window.localStorage,storageKey:"nomgen-auth-v1"}
     });
     // Слушатель авторизации регистрируется до любых сетевых запросов.
     supabase.auth.onAuthStateChange((event,session)=>{
