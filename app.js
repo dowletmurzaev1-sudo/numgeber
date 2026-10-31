@@ -425,14 +425,14 @@
         chord=(chord+1)%progressions.length;
         progressions[chord].forEach((hz,i)=>musicNodes[i]?.frequency.setTargetAtTime(hz,musicContext.currentTime,1.5));
       },8000);
-      // «Утро» Эдварда Грига (Peer Gynt): синтезированная мелодия по мотивам общественного достояния.
-      const melody=[[71,1],[73,1],[76,2],[78,1],[76,1],[73,2],[71,1],[73,1],[76,2],[78,1],[80,1],[78,2],[76,1],[73,1],[71,2],[69,1],[71,1],[73,2],[76,1],[78,1],[80,2],[78,1],[76,1],[73,2],[71,1],[73,1],[76,2],[73,1],[71,1],[69,2],[71,2],[76,2]];
+      // Оригинальная лёгкая игровая мелодия с колокольчиковым тембром.
+      const melody=[[76,1],[79,1],[83,2],[81,1],[79,1],[76,2],[74,1],[76,1],[79,2],[83,1],[86,1],[83,2],[81,1],[79,1],[76,2],[74,1],[76,1],[79,1],[81,2],[79,1],[76,1],[74,2],[76,1],[79,1],[83,2],[86,1],[83,1],[81,2],[79,1],[76,1],[74,2],[76,2]];
       let noteIndex=0;
       const playNote=()=>{
         if(!musicContext||musicContext.state==="closed")return;
         const [midi,beats]=melody[noteIndex],now=musicContext.currentTime;
         const osc=musicContext.createOscillator(),gain=musicContext.createGain();
-        osc.type="sine";osc.frequency.value=440*Math.pow(2,(midi-69)/12);
+        osc.type="triangle";osc.frequency.value=440*Math.pow(2,(midi-69)/12);
         gain.gain.setValueAtTime(0.0001,now);gain.gain.linearRampToValueAtTime(0.38,now+0.08);
         gain.gain.setTargetAtTime(0.0001,now+beats*0.48,0.16);
         osc.connect(gain);gain.connect(filter);osc.start(now);osc.stop(now+beats*0.48+0.7);
