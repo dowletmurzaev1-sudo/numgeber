@@ -24,11 +24,11 @@
   const letters = ["А","В","Е","К","М","Н","О","Р","С","Т","У","Х"];
   const regions = ["77","97","99","177","197","199","777","50","90","150","750","78","98","178","198","23","93","123","116","716","02","102","54","154","66","96","196","74","174","52","152","63","163","61","161"];
   const tiers = [
-    {name:"Обычный",key:"common",weight:69.5,min:350,max:650,color:"#aeb8c4"},
-    {name:"Редкий",key:"rare",weight:22,min:900,max:1800,color:"#56a8ff"},
-    {name:"Эпический",key:"epic",weight:7,min:3000,max:7000,color:"#b78aff"},
-    {name:"Мифический",key:"mythic",weight:1.5,min:12000,max:30000,color:"#ff9c54"},
-    {name:"Легендарный",key:"legendary",weight:.5,min:15000000,max:50000000,color:"#f4d16d"}
+    {name:"Обычный",key:"common",weight:69.5,min:100,max:10000,color:"#aeb8c4"},
+    {name:"Редкий",key:"rare",weight:22,min:10001,max:150000,color:"#56a8ff"},
+    {name:"Эпический",key:"epic",weight:7,min:150001,max:2000000,color:"#b78aff"},
+    {name:"Мифический",key:"mythic",weight:1.5,min:2000001,max:15000000,color:"#ff9c54"},
+    {name:"Легендарный",key:"legendary",weight:.5,min:15000001,max:50000000,color:"#f4d16d"}
   ];
   const $ = id => document.getElementById(id);
   const money = n => Math.round(n).toLocaleString("ru-RU") + " ₽";
@@ -195,11 +195,18 @@
     if(serviceDigits)score+=2;
     const base=tier.min+Math.random()*(tier.max-tier.min);
     let value=base*(1+score*0.22);
-    if(score>=7)value=Math.max(value,15000000);
-    else if(score>=5)value=Math.max(value,3000000);
-    else if(score>=3)value=Math.max(value,500000);
-    if(officialStyle||serviceDigits)value=Math.max(value,1000000);
-    return Math.round(value/50)*50;
+    if(score>=7)value=Math.max(value,15000001);
+    else if(score>=5)value=Math.max(value,2000001);
+    else if(score>=3)value=Math.max(value,150001);
+    if(officialStyle||serviceDigits)value=Math.max(value,150001);
+    return Math.max(100,Math.round(value/50)*50);
+  }
+  function tierForValue(value){
+    if(value>15000000)return tiers[4];
+    if(value>2000000)return tiers[3];
+    if(value>150000)return tiers[2];
+    if(value>10000)return tiers[1];
+    return tiers[0];
   }
   function makeNumber(){
     const baseTier=chooseTier();
@@ -219,8 +226,9 @@
     const pattern=patternDetails(digits,chars);
     const upgrade=(pattern.digitPairs?1:0)+(pattern.letterPairs?1:0)+(pattern.digitTriple?1:0)+(pattern.letterTriple?1:0);
     const tierIndex=Math.min(4,tiers.findIndex(t=>t.key===baseTier.key)+upgrade);
-    const tier=tiers[tierIndex];
-    const value=plateValue(digits,chars.join(""),region,tier,pattern);
+    const baseValue=plateValue(digits,chars.join(""),region,tiers[tierIndex],pattern);
+    const value=baseValue;
+    const tier=tierForValue(value);
     const reason=numberReason(digits,chars.join(""),region,pattern);
     return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason,favorite:false};
   }
@@ -257,9 +265,10 @@
     const match=plate.match(/^([АВЕКМНОРСТУХ])(\d{3})([АВЕКМНОРСТУХ]{2})$/);
     if(!match)return makeNumber();
     const region=String(forced.region||"77");
-    const value=Math.round((15000000+Math.random()*35000000)/50)*50;
     const chars=match[1]+match[3], pattern=patternDetails(match[2],chars);
-    return {id:state.nextId++,digits:match[2],chars,region,plate,tier:"Легендарный",key:"legendary",color:tiers[4].color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern),favorite:false};
+    const value=plateValue(match[2],chars,region,tiers[4],pattern);
+    const tier=tierForValue(value);
+    return {id:state.nextId++,digits:match[2],chars,region,plate,tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern),favorite:false};
   }
   function resumeYandexGameplay(){
     ysdk?.features?.GameplayAPI?.start();
