@@ -763,10 +763,10 @@
     if(!userId){notify("Выбери игрока");return;}
     if(!/^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}$/.test(plate)){notify("Введи номер в формате А777АА");return;}
     if(!/^\d{2,3}$/.test(region)){notify("Регион должен содержать 2–3 цифры");return;}
-    if(!Number.isInteger(count)||count<1||count>100){notify("Количество попыток: от 1 до 100");return;}
+    if(!Number.isInteger(count)||count<1||count>100){notify("Укажи от 1 до 100 попыток");return;}
     const {error}=await supabase.rpc("admin_set_forced_number",{target_user_id:userId,forced_plate:plate,forced_region:region,spin_count:count});
     if(error){notify("Не удалось назначить номер: "+error.message);return;}
-    $("forced-status").textContent="Назначено: "+plate+" · регион "+region+" · выпадет "+count+" раз подряд.";
+    $("forced-status").textContent="Назначено: "+plate+" · регион "+region+" · выпадет на "+count+"-й попытке.";
     notify("Номер назначен выбранному игроку");
   });
   $("forced-clear").addEventListener("click",async()=>{
