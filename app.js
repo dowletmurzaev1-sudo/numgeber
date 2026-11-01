@@ -163,16 +163,43 @@
   }
   function numberReason(digits,chars,region,pattern){
     const reasons=[];
-    if(["777","999","001","002","003","004","005"].includes(region)) reasons.push("Престижный региональный код "+region);
-    if(["001","002","003","004","005"].includes(digits)) reasons.push("Служебно выглядящая комбинация "+digits+" — игровая оценка, не подтверждение принадлежности госоргану");
-    if(chars[0]===chars[1]&&chars[1]===chars[2]) reasons.push("Три одинаковые буквы — коллекционная серия");
-    else if(chars[0]===chars[1]||chars[1]===chars[2]||chars[0]===chars[2]) reasons.push("Повторяющиеся буквы — востребованная комбинация");
-    if(digits[0]===digits[1]&&digits[1]===digits[2]) reasons.push("Три одинаковые цифры — «тройной» номер");
+    const series=chars.toUpperCase();
+    const officialStyle=["АМР","ЕКХ","ХКХ","МММ","ООО","АОО","ВОО","МОО"].includes(series);
+    const serviceDigits=/^00[1-9]$/.test(digits)||["010","020","030","040","050"].includes(digits);
+    if(["77","97","99","177","197","199","777","999"].includes(region)) reasons.push("Престижный региональный код "+region);
+    if(serviceDigits) reasons.push("Служебная цифровая комбинация — игровой бонус, не подтверждение принадлежности госоргану");
+    if(officialStyle) reasons.push("Статусная серия, стилизованная под спецтранспорт/госслужбы — игровой бонус, не подтверждение реального назначения");
+    if(pattern.digitTriple) reasons.push("Три одинаковые цифры — очень редкая «блатная» комбинация");
     else if(pattern.digitPairs) reasons.push("Повторяющиеся цифры повышают коллекционную ценность");
+    if(pattern.letterTriple) reasons.push("Три одинаковые буквы — редкая серия");
+    else if(pattern.letterPairs) reasons.push("Повторяющиеся буквы повышают коллекционную ценность");
+    if(["777","888","999"].includes(digits)) reasons.push("Премиальная комбинация 777/888/999");
     if(pattern.sequence) reasons.push("Последовательность цифр — легко запоминаемый номер");
-    if(["777","888","999"].includes(digits)||pattern.digitTriple||pattern.letterTriple) reasons.push("«Блатная» / статусная комбинация — высокая коллекционная привлекательность");
-    if(!reasons.length) reasons.push("Цена определяется редкостью выпадения и сочетанием символов");
+    if(!reasons.length) reasons.push("Цена определяется редкостью и сочетанием символов");
     return reasons.join(" · ");
+  }
+  function plateValue(digits,chars,region,tier,pattern){
+    const series=chars.toUpperCase();
+    const premiumDigits=["777","888","999"].includes(digits);
+    const officialStyle=["АМР","ЕКХ","ХКХ","МММ","ООО","АОО","ВОО","МОО"].includes(series);
+    const serviceDigits=/^00[1-9]$/.test(digits)||["010","020","030","040","050"].includes(digits);
+    let score=0;
+    if(pattern.digitTriple)score+=5;
+    else if(pattern.digitPairs)score+=2;
+    if(pattern.letterTriple)score+=3;
+    else if(pattern.letterPairs)score+=1;
+    if(premiumDigits)score+=3;
+    if(pattern.sequence)score+=1;
+    if(["77","97","99","177","197","199","777","999"].includes(String(region)))score+=1;
+    if(officialStyle)score+=3;
+    if(serviceDigits)score+=2;
+    const base=tier.min+Math.random()*(tier.max-tier.min);
+    let value=base*(1+score*0.22);
+    if(score>=7)value=Math.max(value,15000000);
+    else if(score>=5)value=Math.max(value,3000000);
+    else if(score>=3)value=Math.max(value,500000);
+    if(officialStyle||serviceDigits)value=Math.max(value,1000000);
+    return Math.round(value/50)*50;
   }
   function makeNumber(){
     const baseTier=chooseTier();
@@ -193,10 +220,8 @@
     const upgrade=(pattern.digitPairs?1:0)+(pattern.letterPairs?1:0)+(pattern.digitTriple?1:0)+(pattern.letterTriple?1:0);
     const tierIndex=Math.min(4,tiers.findIndex(t=>t.key===baseTier.key)+upgrade);
     const tier=tiers[tierIndex];
-    const premiumMultiplier=1+(pattern.digitPairs?0.65:0)+(pattern.letterPairs?0.65:0)+(pattern.digitTriple?1.1:0)+(pattern.letterTriple?1.1:0)+(pattern.sequence?0.35:0);
-    let value=Math.round((tier.min+Math.random()*(tier.max-tier.min))*premiumMultiplier/50)*50;
-    if(tier.key==="legendary") value=Math.max(15000000,value);
-    const reason=numberReason(digits,chars,region,pattern);
+    const value=plateValue(digits,chars.join(""),region,tier,pattern);
+    const reason=numberReason(digits,chars.join(""),region,pattern);
     return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason,favorite:false};
   }
   function showWinAnimation(item){
