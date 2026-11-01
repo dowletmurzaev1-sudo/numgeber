@@ -251,3 +251,66 @@ revoke all on function public.consume_forced_number() from public;
 grant execute on function public.admin_set_forced_number(uuid,text,text,integer) to authenticated;
 grant execute on function public.admin_clear_forced_number(uuid) to authenticated;
 grant execute on function public.consume_forced_number() to authenticated;
+
+
+-- Новая логика: номер выпадает один раз на указанной по счёту попытке.
+alter table public.nomgen_forced_numbers
+  add column if not exists spins_until integer not null default 1
+  check (spins_until between 1 and 100);
+
+create or replace function public.admin_set_forced_number(
+  target_user_id uuid, forced_plate text, forced_region text, spin_count integer
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare normalized_plate text := upper(regexp_replace(coalesce(forced_plate,''),'[[:space:]]','','g'));
+begin
+  if not exists (select 1 from public.nomgen_admins a where a.user_id=(select auth.uid())) then
+    raise exception 'Недостаточно прав администратора';
+  end if;
+  if not exists(select 1 from auth.users u where u.id=target_user_id) then
+    raise exception 'Игрок не найден';
+  end if;
+  if normalized_plate !~ '^[АВЕКМНОРСТУХ][0-9]{3}[АВЕКМНОРСТУХ]{2}$' then
+    raise exception 'Номер должен быть в формате А777АА';
+  end if;
+  if coalesce(forced_region,'') !~ '^[0-9]{2,3}$' then
+    raise exception 'Регион должен содержать 2–3 цифры';
+  end if;
+  if spin_count is null or spin_count < 1 or spin_count > 100 then
+    raise exception 'Номер можно назначить на попытку от 1 до 100';
+  end if;
+  insert into public.nomgen_forced_numbers(user_id,plate,region,remaining,spins_until,updated_at)
+  values(target_user_id,normalized_plate,forced_region,1,spin_count,now())
+  on conflict(user_id) do update
+    set plate=excluded.plate,region=excluded.region,remaining=1,
+        spins_until=excluded.spins_until,updated_at=now();
+end;
+$$;
+
+create or replace function public.consume_forced_number()
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare result jsonb;
+begin
+  delete from public.nomgen_forced_numbers
+  where user_id=(select auth.uid()) and spins_until<=1
+  returning jsonb_build_object('plate',plate,'region',region) into result;
+
+  if result is null then
+    update public.nomgen_forced_numbers
+    set spins_until=spins_until-1,updated_at=now()
+    where user_id=(select auth.uid()) and spins_until>1;
+  end if;
+  return result;
+end;
+$$;
+
+grant execute on function public.admin_set_forced_number(uuid,text,text,integer) to authenticated;
+grant execute on function public.consume_forced_number() to authenticated;
