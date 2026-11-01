@@ -233,8 +233,8 @@
     return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason,favorite:false};
   }
   function showWinAnimation(item){
-    // Эффект награды показываем только для эпических, мифических и легендарных номеров.
-    if(tierRank(item.key)<3)return;
+    // Эффект награды показываем только для мифических и легендарных номеров.
+    if(tierRank(item.key)<4)return;
     const overlay=$("win-overlay");
     overlay.className="win-overlay rarity-"+item.key+" visible";
     $("win-tier").textContent=item.tier.toUpperCase();
