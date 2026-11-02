@@ -178,28 +178,24 @@
     if(!reasons.length) reasons.push("Цена определяется редкостью и сочетанием символов");
     return reasons.join(" · ");
   }
-  function plateValue(digits,chars,region,tier,pattern){
+  function plateValue(digits,chars,region,pattern){
     const series=chars.toUpperCase();
     const premiumDigits=["777","888","999"].includes(digits);
     const officialStyle=["АМР","ЕКХ","ХКХ","МММ","ООО","АОО","ВОО","МОО"].includes(series);
     const serviceDigits=/^00[1-9]$/.test(digits)||["010","020","030","040","050"].includes(digits);
-    let score=0;
-    if(pattern.digitTriple)score+=5;
-    else if(pattern.digitPairs)score+=2;
-    if(pattern.letterTriple)score+=3;
-    else if(pattern.letterPairs)score+=1;
-    if(premiumDigits)score+=3;
-    if(pattern.sequence)score+=1;
-    if(["77","97","99","177","197","199","777","999"].includes(String(region)))score+=1;
-    if(officialStyle)score+=3;
-    if(serviceDigits)score+=2;
-    const base=tier.min+Math.random()*(tier.max-tier.min);
-    let value=base*(1+score*0.22);
-    if(score>=7)value=Math.max(value,15000001);
-    else if(score>=5)value=Math.max(value,2000001);
-    else if(score>=3)value=Math.max(value,150001);
-    if(officialStyle||serviceDigits)value=Math.max(value,150001);
-    return Math.max(100,Math.round(value/50)*50);
+    const prestigeRegion=["77","97","99","177","197","199","777","999"].includes(String(region));
+    let multiplier=1;
+    if(pattern.digitPairs)multiplier*=1.8;
+    if(pattern.digitTriple)multiplier*=12;
+    if(pattern.letterPairs)multiplier*=1.6;
+    if(pattern.letterTriple)multiplier*=5;
+    if(premiumDigits)multiplier*=4;
+    if(pattern.sequence)multiplier*=1.5;
+    if(prestigeRegion)multiplier*=1.5;
+    if(serviceDigits)multiplier*=2;
+    if(officialStyle)multiplier*=3;
+    const base=100+Math.random()*9900;
+    return Math.max(100,Math.round(base*multiplier/50)*50);
   }
   function tierForValue(value){
     if(value>15000000)return tiers[4];
@@ -226,7 +222,7 @@
     const pattern=patternDetails(digits,chars);
     const upgrade=(pattern.digitPairs?1:0)+(pattern.letterPairs?1:0)+(pattern.digitTriple?1:0)+(pattern.letterTriple?1:0);
     const tierIndex=Math.min(4,tiers.findIndex(t=>t.key===baseTier.key)+upgrade);
-    const baseValue=plateValue(digits,chars.join(""),region,tiers[tierIndex],pattern);
+    const baseValue=plateValue(digits,chars.join(""),region,pattern);
     const value=baseValue;
     const tier=tierForValue(value);
     const reason=numberReason(digits,chars.join(""),region,pattern);
@@ -266,7 +262,7 @@
     if(!match)return makeNumber();
     const region=String(forced.region||"77");
     const chars=match[1]+match[3], pattern=patternDetails(match[2],chars);
-    const value=plateValue(match[2],chars,region,tiers[4],pattern);
+    const value=plateValue(match[2],chars,region,pattern);
     const tier=tierForValue(value);
     return {id:state.nextId++,digits:match[2],chars,region,plate,tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern),favorite:false};
   }
