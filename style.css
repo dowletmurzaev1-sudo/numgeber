@@ -102,3 +102,99 @@
 
 /* Daily missions and rewards */
 .daily-quests-panel{margin:18px 0}.daily-reset-label{color:#a9c2a0;font-size:9px;font-weight:800}.daily-intro{margin:-8px 0 14px;color:#9aa6b4;font-size:10px}.daily-quest-list{display:grid;gap:9px}.daily-quest{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px;border:1px solid #35404c;border-radius:10px;background:#202732}.daily-quest.is-claimed{opacity:.68}.daily-quest-copy{min-width:0;flex:1}.daily-quest-copy strong{display:block;font-size:12px}.daily-quest-copy small{display:block;margin-top:4px;color:#9aa6b4;font-size:9px}.daily-progress{height:5px;margin-top:9px;overflow:hidden;border-radius:9px;background:#ffffff16}.daily-progress span{display:block;height:100%;border-radius:9px;background:var(--lime);transition:width .25s}.daily-quest-action{display:grid;justify-items:end;gap:7px;flex-shrink:0}.daily-quest-action b{color:var(--lime);font-size:10px}.daily-quest-action button{padding:8px 10px;border:1px solid #c6f36b55;border-radius:7px;background:#c6f36b18;color:#d8ff8a;font:800 9px Manrope,sans-serif;cursor:pointer}.daily-quest-action button:disabled{border-color:#46515e;background:#293442;color:#8793a0;cursor:default}@media(max-width:420px){.daily-quest{padding:10px;gap:8px}.daily-quest-copy strong{font-size:11px}.daily-quest-action button{padding:7px 8px}}
+
+
+/* NOMGEN GAME UI — inspired by the compact dark-and-gold license-plate game reference */
+:root{--bg:#0b0b10;--panel:#121219;--panel2:#191820;--line:#302a25;--muted:#9c9690;--text:#f6f1e9;--lime:#e6b94f;--lime2:#c78d2b;--gold:#ffd46b}
+body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 78%);color:var(--text)}
+.ambient-one{background:#bd842b;opacity:.09}.ambient-two{background:#7742a0;opacity:.07}
+.topbar{height:66px;background:#0a0a0eea;border-bottom:1px solid #3a2b1c;box-shadow:0 5px 24px #0008}
+.brand{font-size:18px}.brand-mark{background:linear-gradient(145deg,#ffe7a0,#c48a2c);color:#211606;box-shadow:0 0 17px #d49a3d44}
+.accent{color:#e9bd59}.brand small{color:#a69a86}
+.stat-icon{border-color:#6b502a;background:#211a12;color:#ffd46b}
+.profile-button{border-color:#594329;background:#19140f}
+.profile-avatar{background:linear-gradient(145deg,#ffe7a0,#c48a2c);color:#211606}
+.shell{max-width:920px}
+.hero{min-height:0;padding:12px 0 18px;display:flex;justify-content:center;align-items:center;text-align:center}
+.hero-copy{display:none}.hero-art{width:160px;height:92px;min-height:0;position:relative;right:auto;opacity:1;overflow:visible}
+.hero-logo{max-height:105px;filter:drop-shadow(0 9px 22px #d29a3940)}
+.game-grid{grid-template-columns:minmax(0,1.4fr) minmax(230px,.8fr);gap:13px}
+.panel{background:linear-gradient(160deg,#17151a,#101015 75%);border:1px solid #39302a;border-radius:13px;box-shadow:0 12px 30px #0005}
+.panel-heading h2,.feature-card h2{color:#f8f0e4}
+.section-kicker{color:#d6a746;letter-spacing:1.8px}
+.price-pill{background:#2a2013;border:1px solid #74542b;color:#f4c968}
+.machine{background:radial-gradient(ellipse at 50% 0%,#352719,#17151a 60%,#100f14);border:1px solid #624727;border-radius:12px;box-shadow:inset 0 0 35px #0007}
+.machine-top{color:#c2ad8e}
+.machine-lights i:first-child{background:#e8b84e;box-shadow:0 0 9px #e8b84e}
+.generator-options label{color:#c4b7a5}
+.generator-options select,.collection-tools select,.catalog-search{background:#17151a;color:#f3e8d6;border-color:#51402d}
+.license-plate{width:min(100%,410px);height:102px;border:5px solid #d5d2ca;background:linear-gradient(180deg,#fff 0%,#e7e5de 100%);box-shadow:0 7px 0 #817c72,0 15px 30px #0009,inset 0 0 0 1px #fff}
+.plate-main{font-size:clamp(35px,5vw,48px);letter-spacing:2px}
+.result-info{min-height:66px}
+.rarity-label{letter-spacing:1.7px}
+.result-info strong{font-size:17px;color:#fff2dc}
+.result-info small{color:#b4a796}
+.spin-button,.upgrade-buy,.profile-save{background:linear-gradient(180deg,#f3cf75,#c58b32);color:#211606;box-shadow:0 4px 0 #80531c}
+.spin-button:hover{background:linear-gradient(180deg,#ffe39a,#dda344)}
+.spin-button:active{box-shadow:0 2px 0 #80531c}
+.spin-button b{background:#4a321b22}
+.odds-note{color:#a99a87}
+.stats-panel{background:linear-gradient(160deg,#17151a,#100f14)}
+.mini-stat{background:#1b181b;border-color:#3b3028}
+.mini-stat span,.mini-stat small{color:#b5a797}
+.mini-stat strong{color:#f3d28c}
+.rarity-progress{border-top:1px solid #352b24}
+.progress-title{color:#c4b7a5}.progress-title span:last-child{color:#e8bd5b}
+.daily-quests-panel{margin:13px 0}
+.daily-reset-label{color:#e0b85f}
+.daily-quest{background:#19161a;border-color:#3c3026}
+.daily-quest-copy small{color:#b0a18f}
+.daily-progress{background:#ffffff16}.daily-progress span{background:linear-gradient(90deg,#b77a25,#f4d47c)}
+.daily-quest-action b{color:#f2cb70}
+.daily-quest-action button,.text-button{border-color:#795a2d;background:#2a2014;color:#f0c76c}
+.daily-quest-action button:hover,.text-button:hover{background:#3a2a17}
+.daily-quest-action button:disabled{background:#29262a;border-color:#494044;color:#968d84}
+.feature-modal,.profile-modal{background:#050509eF;backdrop-filter:blur(9px)}
+.feature-card,.profile-card,.auth-card{background:linear-gradient(155deg,#211b19,#111116 70%);border-color:#624a2c;box-shadow:0 25px 80px #000d}
+.feature-close,.profile-close{color:#d4bd91}
+.menu-eyebrow{color:#d9ad55}
+.menu-tile,.upgrade-card{background:linear-gradient(145deg,#24201d,#151419);border-color:#58432b}
+.tile-caption b{color:#f5e8d2}.tile-caption small{color:#b0a18f}
+.count-badge{background:#e6b94f;color:#201507}
+.collection-panel,.history-panel{background:transparent}
+.number-card{background:linear-gradient(145deg,#211d1b,#151419);border-color:#4b3a2a}
+.small-plate{border-color:#c7c2b8;box-shadow:0 3px 0 #716b62}
+.card-price,.history-amount{color:#f1ca71}
+.sell-button{border-color:#76572e;color:#edc46a;background:#2b2115}
+.leader-row,.admin-player-row{background:#1b181b;border-color:#403329}
+.leader-rank{background:#3a2a17;color:#f3c96c}
+.leader-row>span:last-child,.admin-player-row b{color:#f1c96e}
+.admin-tab{background:#211d1b;border-color:#59432b;color:#d5c4a9}
+.admin-tab.active{background:#e6b94f;color:#211606;border-color:#e6b94f}
+.auth-gate{background:#07070bf5}
+.auth-card .brand-mark{background:linear-gradient(145deg,#ffe7a0,#c48a2c)}
+.guest-button{background:#28211a;border-color:#654c2c}
+.google-button{border-radius:8px}
+.auth-card p{color:#b9aa98}
+.auth-card h2{color:#f7ead6}
+.win-card{background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--tier),transparent 82%),#171319 65%)}
+@media(max-width:760px){
+ .topbar{height:60px;padding:0 12px}.hero{padding:7px 0 12px;min-height:0}
+ .hero-art{width:125px;height:74px;right:auto;opacity:1;transform:none}
+ .hero-logo{max-height:78px}
+ .game-grid{grid-template-columns:1fr}
+ .stats-panel{min-height:0}
+ .stat-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .mini-stat{padding:10px 8px}.mini-stat strong{font-size:16px;overflow-wrap:anywhere}
+ .rarity-progress{margin-top:14px;padding-top:14px}
+}
+@media(max-width:470px){
+ .topbar{padding:0 9px}.brand{font-size:15px;gap:7px}.brand-mark{width:31px;height:31px;font-size:20px}
+ .brand small{font-size:7px;letter-spacing:1px}
+ .hero{padding:5px 0 10px}
+ .hero-art{width:110px;height:66px}.hero-logo{max-height:68px}
+ .shell{padding:0 10px}.panel{padding:14px}
+ .machine{padding:14px 10px}.license-plate{height:82px}.plate-main{font-size:33px}
+ .stat-cards{gap:6px}.mini-stat span{font-size:8px}.mini-stat strong{font-size:14px}.mini-stat small{font-size:8px}
+ .daily-quest{padding:10px}.feature-card{padding:17px}
+}
