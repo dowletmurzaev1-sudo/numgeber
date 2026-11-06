@@ -38,7 +38,6 @@
     if(!state.dailyQuests||state.dailyQuests.date!==today)state.dailyQuests={date:today,spins:0,rareFinds:0,claimed:[]};
     if(!Array.isArray(state.dailyQuests.claimed))state.dailyQuests.claimed=[];
   }
-  ensureDailyState();
   const DAILY_TASKS=[
     {id:"spin3",title:"Разогрев коллекционера",description:"Сделай 3 прокрутки генератора",goal:3,reward:1000,progress:q=>q.spins},
     {id:"spin8",title:"Охота за номерами",description:"Сделай 8 прокруток генератора",goal:8,reward:2500,progress:q=>q.spins},
@@ -62,6 +61,7 @@
   }
 
   const state = load();
+  ensureDailyState();
   let toastTimer;
   let musicContext=null, musicMaster=null, musicNodes=[], musicTimer=null, musicMelodyTimer=null;
   let musicEnabled=localStorage.getItem("nomgen-music-enabled")==="1";
