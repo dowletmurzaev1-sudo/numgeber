@@ -122,6 +122,7 @@
       if(error)throw error;
       if(data?.game_state && typeof data.game_state.balance==="number"){
         Object.assign(state,data.game_state);
+        if(migrateCollectionValues())save();
         const {data:profile,error:profileError}=await supabase.from("nomgen_players").select("display_name").eq("user_id",user.id).maybeSingle();
         if(profileError)console.warn("Profile name could not be loaded:",profileError.message);
         playerName=(profile?.display_name||user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Игрок").slice(0,20);
@@ -337,6 +338,24 @@
     const tier=tierForValue(value);
     const labels={civil:"Гражданский РФ",police:"Полицейский",taxi:"Такси",military:"Военный",belarus:"Беларусь"};
     return {id:state.nextId++,digits,chars,region,plate,type,typeLabel:labels[type],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(digits,chars,region,pattern,type),favorite:false};
+  }
+  function migrateCollectionValues(){
+    if(Number(state.valuationVersion)>=2)return false;
+    if(Array.isArray(state.collection)){
+      state.collection.forEach(item=>{
+        if(!item||!item.digits||!item.chars)return;
+        const region=String(item.region||"77");
+        const type=item.type||"civil";
+        const pattern=patternDetails(item.digits,item.chars,region);
+        const value=plateValue(item.digits,item.chars,region,pattern,type);
+        const tier=tierForValue(value);
+        item.value=value;item.tier=tier.name;item.key=tier.key;item.color=tier.color;
+        item.pattern=pattern.label;
+        item.reason=numberReason(item.digits,item.chars,region,pattern,type);
+      });
+    }
+    state.valuationVersion=2;
+    return true;
   }
   function showWinAnimation(item){
     // Эффект награды показываем только для мифических и легендарных номеров.
@@ -941,6 +960,7 @@
   $("home-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");window.scrollTo({top:0,behavior:"smooth"});});
   $("sort-select").addEventListener("change",render);
   $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция, история и улучшения будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
+  if(migrateCollectionValues())save();
   $("player-name").value=playerName;
   render();
   renderUpgrades();
