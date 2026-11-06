@@ -189,15 +189,16 @@
     const digitPairs=d.length>=3&&new Set(d).size<=2&&!digitTriple;
     const letterPairs=c.length>=3&&new Set(c).size<=2&&!letterTriple;
     const sequences=["123","234","345","456","567","678","789","987","876","765","654","543","432","321"];
-    const sequence=sequences.includes(d);
+    const sequence=d.length===3&&sequences.includes(d);
     const mirror=d.length===3&&d[0]===d[2]&&d[0]!==d[1];
     const small=d.length===3&&/^00[1-9]$/.test(d);
-    const round=d.length===3&&/^\d00$/.test(d);
+    const round=d.length===3&&/^\\d00$/.test(d);
     const regionMatch=String(region).endsWith(d.slice(-2))||d===String(region).slice(-3);
-    const letterMirror=c.length===3&&c[0]===c[2];
-    const score=(digitTriple?8:0)+(letterTriple?7:0)+(digitPairs?2:0)+(letterPairs?2:0)+(sequence?3:0)+(mirror?3:0)+(small?4:0)+(round?2:0)+(regionMatch?3:0)+(letterMirror?2:0);
-    const labels=[digitTriple?"три одинаковые цифры":digitPairs?"повтор цифр":"",letterTriple?"три одинаковые буквы":letterPairs?"повтор букв":"",sequence?"цифры по порядку":"",mirror?"зеркальные цифры":"",small?"малый номер":"",round?"круглая сотня":"",regionMatch?"совпадение с регионом":"",letterMirror?"зеркальные буквы":""].filter(Boolean);
-    return {digitPairs,letterPairs,digitTriple,letterTriple,sequence,mirror,small,round,regionMatch,letterMirror,score,label:labels.join(" · ")};
+    const letterMirror=c.length===3&&c[0]===c[2]&&c[0]!==c[1];
+    const fullBlat=digitTriple&&letterTriple;
+    const score=(digitTriple?8:0)+(letterTriple?7:0)+(digitPairs?2:0)+(letterPairs?2:0)+(sequence?3:0)+(mirror?3:0)+(small?4:0)+(round?2:0)+(regionMatch?2:0)+(letterMirror?2:0)+(fullBlat?6:0);
+    const labels=[digitTriple?"три одинаковые цифры":digitPairs?"повтор цифр":"",letterTriple?"три одинаковые буквы":letterPairs?"повтор букв":"",fullBlat?"фуллблат": "",sequence?"цифры по порядку":"",mirror?"зеркальные цифры":"",small?"малый номер":"",round?"круглая сотня":"",regionMatch?"совпадение с регионом":"",letterMirror?"зеркальные буквы":""].filter(Boolean);
+    return {digitPairs,letterPairs,digitTriple,letterTriple,fullBlat,sequence,mirror,small,round,regionMatch,letterMirror,score,label:labels.join(" · ")};
   }
   const SPECIAL_SERIES = {
     "АМР|77":"Серия, связываемая с правительственным автопарком",
@@ -258,30 +259,32 @@
   }
   function plateValue(digits,chars,region,pattern,type="civil"){
     const special=!!specialSeriesInfo(chars,region);
+    const premiumRegion=["77","97","99","177","197","199","777"].includes(String(region));
     let multiplier=1;
-    if(pattern.digitTriple)multiplier*=18;
-    else if(pattern.digitPairs)multiplier*=2.2;
-    if(pattern.letterTriple)multiplier*=9;
-    else if(pattern.letterPairs)multiplier*=1.8;
-    if(pattern.sequence)multiplier*=3;
-    if(pattern.mirror)multiplier*=3;
-    if(pattern.small)multiplier*=4;
-    if(pattern.round)multiplier*=1.8;
-    if(pattern.regionMatch)multiplier*=2.5;
-    if(pattern.letterMirror)multiplier*=1.8;
-    if(["777","888","999"].includes(String(digits)))multiplier*=3;
-    if(["77","97","99","177","197","199","777"].includes(String(region)))multiplier*=1.35;
-    if(special)multiplier*=12;
-    if(type==="police")multiplier*=1.5;
-    if(type==="taxi")multiplier*=1.15;
-    if(type==="military")multiplier*=2;
+    if(pattern.digitTriple)multiplier*=10;
+    else if(pattern.digitPairs)multiplier*=1.8;
+    if(pattern.letterTriple)multiplier*=5;
+    else if(pattern.letterPairs)multiplier*=1.5;
+    if(pattern.fullBlat)multiplier*=2.5;
+    if(pattern.sequence)multiplier*=2.2;
+    if(pattern.mirror)multiplier*=2;
+    if(pattern.small)multiplier*=2.5;
+    if(pattern.round)multiplier*=1.5;
+    if(pattern.regionMatch)multiplier*=1.6;
+    if(pattern.letterMirror)multiplier*=1.5;
+    if(premiumRegion)multiplier*=1.35;
+    if(special)multiplier*=7;
+    if(type==="police")multiplier*=1.25;
+    if(type==="taxi")multiplier*=1.1;
+    if(type==="military")multiplier*=1.5;
     if(type==="belarus")multiplier*=1.1;
-    const base=100+Math.random()*1900;
+    const base=150+Math.random()*2350;
     return Math.max(100,Math.min(50000000,Math.round(base*multiplier/50)*50));
   }
   function tierForValue(value){
     if(value>=15000000)return tiers[4];
     if(value>=2000000)return tiers[3];
+    if(value>=700000)return tiers[2];
     if(value>=150000)return tiers[2];
     if(value>=10000)return tiers[1];
     return tiers[0];
@@ -299,7 +302,6 @@
     return regions[Math.floor(Math.random()*regions.length)].trim();
   }
   function makeNumber(){
-    const targetTier=chooseTier();
     const type=selectedPlateType(), region=selectedRegion(type);
     let digits,chars,plate;
     if(type==="police"){
@@ -319,26 +321,20 @@
       chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
       plate=chars[0]+digits+chars.slice(1);
     }
-    if(targetTier.key!=="common"){
-      const premium=["777","888","999","555","111","222","333"];
-      if(type==="civil"||type==="taxi"){
-        if(targetTier.key==="rare"){digits=Math.random()<.5?"00"+(1+Math.floor(Math.random()*9)):"12"+Math.floor(Math.random()*10);chars=chars[0]+chars[0]+chars[2];}
-        if(targetTier.key==="epic"){digits=premium[Math.floor(Math.random()*premium.length)];chars=chars[0]+chars[0]+chars[2];}
-        if(targetTier.key==="mythic"){digits=premium[Math.floor(Math.random()*premium.length)];const l=letters[Math.floor(Math.random()*letters.length)];chars=l+l+l;}
-        if(targetTier.key==="legendary"){digits=["777","888","999"][Math.floor(Math.random()*3)];const l=letters[Math.floor(Math.random()*letters.length)];chars=l+l+l;}
-      }else{
-        digits=targetTier.key==="rare"?"1001":targetTier.key==="epic"?"7777":targetTier.key==="mythic"?"8888":"9999";
-        if(type==="police")chars=letters[Math.floor(Math.random()*letters.length)];
-        else chars=chars[0]+chars[0];
-      }
-      if(type==="civil"||type==="taxi")plate=chars[0]+digits+chars.slice(1);
-      else if(type==="police")plate=chars+" "+digits;
-      else if(type==="military")plate=digits+" "+chars+" "+region;
-      else plate=digits+" "+chars+"-"+(1+Math.floor(Math.random()*7));
+    // Улучшение удачи повышает шанс красивого рисунка, но не назначает номеру
+    // случайную редкость и не подгоняет цену под заранее выбранный тир.
+    const luckLevel=Math.max(0,Math.min(5,Number(state.luckLevel)||0));
+    const beautyChance=0.025*luckLevel;
+    if((type==="civil"||type==="taxi")&&Math.random()<beautyChance){
+      const feature=Math.floor(Math.random()*4);
+      if(feature===0)digits=["111","222","333","555","777","888","999"][Math.floor(Math.random()*7)];
+      else if(feature===1){const l=letters[Math.floor(Math.random()*letters.length)];chars=l+l+l;}
+      else if(feature===2)digits=["001","007","100","200","500"][Math.floor(Math.random()*5)];
+      else digits=["121","232","343","454","565","676","787"][Math.floor(Math.random()*7)];
+      plate=chars[0]+digits+chars.slice(1);
     }
     const pattern=patternDetails(digits,chars,region);
-    const rawValue=plateValue(digits,chars,region,pattern,type);
-    const value=targetTier.key==="common"?rawValue:Math.round((targetTier.min+Math.random()*(targetTier.max-targetTier.min))/50)*50;
+    const value=plateValue(digits,chars,region,pattern,type);
     const tier=tierForValue(value);
     const labels={civil:"Гражданский РФ",police:"Полицейский",taxi:"Такси",military:"Военный",belarus:"Беларусь"};
     return {id:state.nextId++,digits,chars,region,plate,type,typeLabel:labels[type],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(digits,chars,region,pattern,type),favorite:false};
