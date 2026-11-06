@@ -32,6 +32,35 @@
   ];
   const $ = id => document.getElementById(id);
   const money = n => Math.round(n).toLocaleString("ru-RU") + " ₽";
+  function dailyDateKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function ensureDailyState(){
+    const today=dailyDateKey();
+    if(!state.dailyQuests||state.dailyQuests.date!==today)state.dailyQuests={date:today,spins:0,rareFinds:0,claimed:[]};
+    if(!Array.isArray(state.dailyQuests.claimed))state.dailyQuests.claimed=[];
+  }
+  ensureDailyState();
+  const DAILY_TASKS=[
+    {id:"spin3",title:"Разогрев коллекционера",description:"Сделай 3 прокрутки генератора",goal:3,reward:1000,progress:q=>q.spins},
+    {id:"spin8",title:"Охота за номерами",description:"Сделай 8 прокруток генератора",goal:8,reward:2500,progress:q=>q.spins},
+    {id:"rare1",title:"Поймай редкость",description:"Найди хотя бы один редкий номер или лучше",goal:1,reward:2000,progress:q=>q.rareFinds}
+  ];
+  function renderDailyQuests(){
+    ensureDailyState();
+    const q=state.dailyQuests;
+    $("daily-quest-list").innerHTML=DAILY_TASKS.map(task=>{
+      const progress=Math.min(task.goal,task.progress(q));
+      const claimed=q.claimed.includes(task.id);
+      const complete=progress>=task.goal;
+      return '<article class="daily-quest '+(claimed?'is-claimed':'')+'"><div class="daily-quest-copy"><strong>'+task.title+'</strong><small>'+task.description+'</small><div class="daily-progress"><span style="width:'+Math.round(progress/task.goal*100)+'%"></span></div><small class="daily-progress-text">'+progress+' / '+task.goal+'</small></div><div class="daily-quest-action"><b>+'+money(task.reward)+'</b><button type="button" data-claim-quest="'+task.id+'" '+(!complete||claimed?'disabled':'')+'>'+(claimed?'Получено':complete?'Забрать':'Выполнить')+'</button></div></article>';
+    }).join("");
+  }
+  function claimDailyQuest(id){
+    ensureDailyState();
+    const task=DAILY_TASKS.find(x=>x.id===id),q=state.dailyQuests;
+    if(!task||q.claimed.includes(id)||task.progress(q)<task.goal)return;
+    q.claimed.push(id);state.balance+=task.reward;save();render();notify("Награда получена: "+money(task.reward));
+  }
+
   const state = load();
   let toastTimer;
   let musicContext=null, musicMaster=null, musicNodes=[], musicTimer=null, musicMelodyTimer=null;
@@ -400,7 +429,7 @@
       if(error){btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";notify("Не удалось проверить настройку номера: "+error.message);return;}
       forcedNumber=data;
     }
-    state.balance-=COST;state.spins++;save();render();
+    ensureDailyState();state.dailyQuests.spins++;state.balance-=COST;state.spins++;save();render();
     const machine=$("plate-wrap");
     machine.classList.add("spinning");
     $("rarity-label").textContent="ИДЁТ РОЗЫГРЫШ";$("result-value").textContent="Ищем красивую комбинацию…";$("result-hint").textContent="Удача уже где-то рядом";
@@ -410,7 +439,7 @@
       $("plate-main").textContent=preview; $("plate-region").textContent=previewType==="belarus"?"BY":previewType==="military"?"ВОЙСКА":regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
       if(ticks>=10){
         clearInterval(interval);machine.classList.remove("spinning");
-        const item=forcedNumber?makeForcedNumber(forcedNumber):makeNumber();state.collection.unshift(item);save();
+        const item=forcedNumber?makeForcedNumber(forcedNumber):makeNumber();if(item.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}state.collection.unshift(item);save();
         $("plate-main").textContent=item.plate;$("plate-region").textContent=item.type==="belarus"?"BY":item.region;$("license-plate").dataset.type=item.type||"civil";
         const info=$("result-info");info.className="result-info rarity-"+item.key;
         $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=(item.typeLabel?item.typeLabel+" · ":"")+(item.reason||"Номер добавлен в твою коллекцию");
@@ -461,6 +490,7 @@
     $("buy-luck").disabled=luckLevel===5;
   }
   function render(){
+    renderDailyQuests();
     $("balance").textContent=money(state.balance);$("collection-count").textContent=state.collection.length+" "+plural(state.collection.length,["номер","номера","номеров"]);
     $("collection-badge").textContent=state.collection.length;$("spins-count").textContent=state.spins;
     const total=state.collection.reduce((s,x)=>s+x.value,0);$("total-value").textContent=money(total);
@@ -901,6 +931,7 @@
   $("win-close").addEventListener("click",()=>{$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);});
   $("win-overlay").addEventListener("click",e=>{if(e.target===$("win-overlay")){$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);}});
   document.addEventListener("keydown",e=>{if(e.key==="Escape")$("win-overlay").classList.remove("visible");});
+  $("daily-quest-list").addEventListener("click",e=>{const button=e.target.closest("[data-claim-quest]");if(button)claimDailyQuest(button.dataset.claimQuest);});
   $("collection-grid").addEventListener("click",e=>{const fav=e.target.closest("[data-favorite]");if(fav){toggleFavorite(Number(fav.dataset.favorite));return;}const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
   $("sell-all").addEventListener("click",sellAll);
