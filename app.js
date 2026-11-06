@@ -260,7 +260,8 @@
   }
   function plateValue(digits,chars,region,pattern,type="civil"){
     const special=!!specialSeriesInfo(chars,region);
-    const premiumRegion=["77","97","99","177","197","199","777"].includes(String(region));
+    const regionCode=String(region);
+    const premiumRegion=["77","97","99","177","197","199"].includes(regionCode);
     let multiplier=1;
     if(pattern.digitTriple)multiplier*=10;
     else if(pattern.digitPairs)multiplier*=1.8;
@@ -274,6 +275,7 @@
     if(pattern.regionMatch)multiplier*=1.6;
     if(pattern.letterMirror)multiplier*=1.5;
     if(premiumRegion)multiplier*=1.35;
+    if(regionCode==="777")multiplier*=5;
     if(special)multiplier*=7;
     if(type==="police")multiplier*=1.25;
     if(type==="taxi")multiplier*=1.1;
