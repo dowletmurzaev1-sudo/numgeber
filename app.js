@@ -153,80 +153,120 @@
     for(let i=0;i<tiers.length;i++){roll-=effectiveWeights[i];if(roll<0)return tiers[i];}
     return tiers[0];
   }
-  function patternDetails(digits, chars){
-    const digitPairs=digits[0]===digits[1]||digits[1]===digits[2]||digits[0]===digits[2];
-    const letterPairs=chars[0]===chars[1]||chars[1]===chars[2]||chars[0]===chars[2];
-    const digitTriple=digits[0]===digits[1]&&digits[1]===digits[2];
-    const letterTriple=chars[0]===chars[1]&&chars[1]===chars[2];
-    const sequence=["123","234","345","456","567","678","789","987","876","765","654","543","432","321"].includes(digits);
-    return {digitPairs,letterPairs,digitTriple,letterTriple,sequence,score:(digitPairs?2:0)+(letterPairs?2:0)+(digitTriple?2:0)+(letterTriple?2:0)+(sequence?1:0),label:[digitTriple?"три одинаковые цифры":digitPairs?"две одинаковые цифры":"",letterTriple?"три одинаковые буквы":letterPairs?"две одинаковые буквы":"",sequence?"последовательность":""] .filter(Boolean).join(" · ")};
+  function patternDetails(digits, chars, region=""){
+    const d=String(digits), c=String(chars);
+    const digitTriple=d.length>=3&&new Set(d).size===1;
+    const letterTriple=c.length>=3&&new Set(c).size===1;
+    const digitPairs=d.length>=3&&new Set(d).size<=2&&!digitTriple;
+    const letterPairs=c.length>=3&&new Set(c).size<=2&&!letterTriple;
+    const sequences=["123","234","345","456","567","678","789","987","876","765","654","543","432","321"];
+    const sequence=sequences.includes(d);
+    const mirror=d.length===3&&d[0]===d[2]&&d[0]!==d[1];
+    const small=d.length===3&&/^00[1-9]$/.test(d);
+    const round=d.length===3&&/^\d00$/.test(d);
+    const regionMatch=String(region).endsWith(d.slice(-2))||d===String(region).slice(-3);
+    const letterMirror=c.length===3&&c[0]===c[2];
+    const score=(digitTriple?8:0)+(letterTriple?7:0)+(digitPairs?2:0)+(letterPairs?2:0)+(sequence?3:0)+(mirror?3:0)+(small?4:0)+(round?2:0)+(regionMatch?3:0)+(letterMirror?2:0);
+    const labels=[digitTriple?"три одинаковые цифры":digitPairs?"повтор цифр":"",letterTriple?"три одинаковые буквы":letterPairs?"повтор букв":"",sequence?"цифры по порядку":"",mirror?"зеркальные цифры":"",small?"малый номер":"",round?"круглая сотня":"",regionMatch?"совпадение с регионом":"",letterMirror?"зеркальные буквы":""].filter(Boolean);
+    return {digitPairs,letterPairs,digitTriple,letterTriple,sequence,mirror,small,round,regionMatch,letterMirror,score,label:labels.join(" · ")};
   }
-  function numberReason(digits,chars,region,pattern){
+  const SPECIAL_SERIES = {
+    "АМР|77":"Серия, связываемая с правительственным автопарком",
+    "ВМР|77":"Специальная серия, встречающаяся в ведомственных подборках",
+    "КМР|77":"Редкая ведомственная серия",
+    "ММР|77":"Редкая ведомственная серия",
+    "ЕКХ|77":"Известная серия, связываемая с ФСО",
+    "ЕКХ|97":"Известная серия, связываемая с ФСО",
+    "САС|77":"Редкая серия из специальных подборок",
+    "ХКХ|77":"Редкая московская серия",
+    "ССС|77":"Редкая специальная серия",
+    "ООО|77":"Исторически известная серия",
+    "ООО|78":"Исторически известная серия Санкт-Петербурга",
+    "ААА|78":"Редкая серия Санкт-Петербурга"
+  };
+  function specialSeriesInfo(chars,region){
+    return SPECIAL_SERIES[String(chars).toUpperCase()+"|"+String(region)]||"";
+  }
+  function numberReason(digits,chars,region,pattern,type="civil"){
     const reasons=[];
-    const series=chars.toUpperCase();
-    const officialStyle=["АМР","ЕКХ","ХКХ","МММ","ООО","АОО","ВОО","МОО"].includes(series);
-    const serviceDigits=/^00[1-9]$/.test(digits)||["010","020","030","040","050"].includes(digits);
-    if(["77","97","99","177","197","199","777","999"].includes(region)) reasons.push("Престижный региональный код "+region);
-    if(serviceDigits) reasons.push("Служебная цифровая комбинация — игровой бонус, не подтверждение принадлежности госоргану");
-    if(officialStyle) reasons.push("Статусная серия, стилизованная под спецтранспорт/госслужбы — игровой бонус, не подтверждение реального назначения");
-    if(pattern.digitTriple) reasons.push("Три одинаковые цифры — очень редкая «блатная» комбинация");
-    else if(pattern.digitPairs) reasons.push("Повторяющиеся цифры повышают коллекционную ценность");
-    if(pattern.letterTriple) reasons.push("Три одинаковые буквы — редкая серия");
-    else if(pattern.letterPairs) reasons.push("Повторяющиеся буквы повышают коллекционную ценность");
-    if(["777","888","999"].includes(digits)) reasons.push("Премиальная комбинация 777/888/999");
-    if(pattern.sequence) reasons.push("Последовательность цифр — легко запоминаемый номер");
-    if(!reasons.length) reasons.push("Цена определяется редкостью и сочетанием символов");
+    const special=specialSeriesInfo(chars,region);
+    if(special)reasons.push(special+" (игровая оценка, не подтверждение ведомственной принадлежности)");
+    if(pattern.label)reasons.push(pattern.label);
+    if(["77","97","99","177","197","199","777"].includes(String(region)))reasons.push("Престижный региональный код "+region);
+    if(type==="police")reasons.push("Полицейский формат номера");
+    if(type==="taxi")reasons.push("Жёлтый номер такси");
+    if(type==="military")reasons.push("Военный формат номера");
+    if(type==="belarus")reasons.push("Белорусский формат номера");
+    if(!reasons.length)reasons.push("Обычная комбинация без дополнительных признаков редкости");
     return reasons.join(" · ");
   }
-  function plateValue(digits,chars,region,pattern){
-    const series=chars.toUpperCase();
-    const premiumDigits=["777","888","999"].includes(digits);
-    const officialStyle=["АМР","ЕКХ","ХКХ","МММ","ООО","АОО","ВОО","МОО"].includes(series);
-    const serviceDigits=/^00[1-9]$/.test(digits)||["010","020","030","040","050"].includes(digits);
-    const prestigeRegion=["77","97","99","177","197","199","777","999"].includes(String(region));
+  function plateValue(digits,chars,region,pattern,type="civil"){
+    const special=!!specialSeriesInfo(chars,region);
     let multiplier=1;
-    if(pattern.digitPairs)multiplier*=1.8;
-    if(pattern.digitTriple)multiplier*=12;
-    if(pattern.letterPairs)multiplier*=1.6;
-    if(pattern.letterTriple)multiplier*=5;
-    if(premiumDigits)multiplier*=4;
-    if(pattern.sequence)multiplier*=1.5;
-    if(prestigeRegion)multiplier*=1.5;
-    if(serviceDigits)multiplier*=2;
-    if(officialStyle)multiplier*=3;
-    const base=100+Math.random()*9900;
-    return Math.max(100,Math.round(base*multiplier/50)*50);
+    if(pattern.digitTriple)multiplier*=18;
+    else if(pattern.digitPairs)multiplier*=2.2;
+    if(pattern.letterTriple)multiplier*=9;
+    else if(pattern.letterPairs)multiplier*=1.8;
+    if(pattern.sequence)multiplier*=3;
+    if(pattern.mirror)multiplier*=3;
+    if(pattern.small)multiplier*=4;
+    if(pattern.round)multiplier*=1.8;
+    if(pattern.regionMatch)multiplier*=2.5;
+    if(pattern.letterMirror)multiplier*=1.8;
+    if(["777","888","999"].includes(String(digits)))multiplier*=3;
+    if(["77","97","99","177","197","199","777"].includes(String(region)))multiplier*=1.35;
+    if(special)multiplier*=12;
+    if(type==="police")multiplier*=1.5;
+    if(type==="taxi")multiplier*=1.15;
+    if(type==="military")multiplier*=2;
+    if(type==="belarus")multiplier*=1.1;
+    const base=100+Math.random()*1900;
+    return Math.max(100,Math.min(50000000,Math.round(base*multiplier/50)*50));
   }
   function tierForValue(value){
-    if(value>15000000)return tiers[4];
-    if(value>2000000)return tiers[3];
-    if(value>150000)return tiers[2];
-    if(value>10000)return tiers[1];
+    if(value>=15000000)return tiers[4];
+    if(value>=2000000)return tiers[3];
+    if(value>=150000)return tiers[2];
+    if(value>=10000)return tiers[1];
     return tiers[0];
   }
+  function selectedPlateType(){
+    const chosen=$("plate-type")?.value||"all";
+    if(chosen!=="all")return chosen;
+    const pool=["civil","civil","civil","taxi","police","military","belarus"];
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  function selectedRegion(type){
+    const chosen=$("plate-region-select")?.value||"random";
+    if(chosen!=="random"&&chosen!==" Беларусь")return chosen;
+    if(type==="belarus")return "BY";
+    return regions[Math.floor(Math.random()*regions.length)].trim();
+  }
   function makeNumber(){
-    const baseTier=chooseTier();
-    let digits, chars, region;
-    if(baseTier.key==="legendary"){
-      const premiumDigits=["777","888","999","111","222","333","555"];
-      const premiumLetters=["А","М","О","Х","Т","Е","К","С"];
-      const letter=premiumLetters[Math.floor(Math.random()*premiumLetters.length)];
-      digits=premiumDigits[Math.floor(Math.random()*premiumDigits.length)];
-      chars=[letter,letter,letter];
-      region=["77","97","99","177","197","199","777"][Math.floor(Math.random()*7)];
+    const type=selectedPlateType(), region=selectedRegion(type);
+    let digits,chars,plate;
+    if(type==="police"){
+      digits=String(1000+Math.floor(Math.random()*9000));
+      chars=letters[Math.floor(Math.random()*letters.length)];
+      plate=chars+" "+digits;
+    }else if(type==="military"){
+      digits=String(1000+Math.floor(Math.random()*9000));
+      chars=Array.from({length:2},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
+      plate=digits+" "+chars+" "+region;
+    }else if(type==="belarus"){
+      digits=String(1000+Math.floor(Math.random()*9000));
+      chars=Array.from({length:2},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
+      plate=digits+" "+chars+"-"+(1+Math.floor(Math.random()*7));
     }else{
-      digits=String(Math.floor(Math.random()*1000)).padStart(3,"0");
-      chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]);
-      region=regions[Math.floor(Math.random()*regions.length)].trim();
+      digits=String(1+Math.floor(Math.random()*999)).padStart(3,"0");
+      chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
+      plate=chars[0]+digits+chars.slice(1);
     }
-    const pattern=patternDetails(digits,chars);
-    const upgrade=(pattern.digitPairs?1:0)+(pattern.letterPairs?1:0)+(pattern.digitTriple?1:0)+(pattern.letterTriple?1:0);
-    const tierIndex=Math.min(4,tiers.findIndex(t=>t.key===baseTier.key)+upgrade);
-    const baseValue=plateValue(digits,chars.join(""),region,pattern);
-    const value=baseValue;
+    const pattern=patternDetails(digits,chars,region);
+    const value=plateValue(digits,chars,region,pattern,type);
     const tier=tierForValue(value);
-    const reason=numberReason(digits,chars.join(""),region,pattern);
-    return {id:state.nextId++,digits,chars:chars.join(""),region,plate:chars[0]+digits+chars[1]+chars[2],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason,favorite:false};
+    const labels={civil:"Гражданский РФ",police:"Полицейский",taxi:"Такси",military:"Военный",belarus:"Беларусь"};
+    return {id:state.nextId++,digits,chars,region,plate,type,typeLabel:labels[type],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(digits,chars,region,pattern,type),favorite:false};
   }
   function showWinAnimation(item){
     // Эффект награды показываем только для мифических и легендарных номеров.
@@ -262,9 +302,9 @@
     if(!match)return makeNumber();
     const region=String(forced.region||"77");
     const chars=match[1]+match[3], pattern=patternDetails(match[2],chars);
-    const value=plateValue(match[2],chars,region,pattern);
+    const value=plateValue(match[2],chars,region,pattern,"civil");
     const tier=tierForValue(value);
-    return {id:state.nextId++,digits:match[2],chars,region,plate,tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern),favorite:false};
+    return {id:state.nextId++,digits:match[2],chars,region,plate,tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern,"civil"),type:"civil",typeLabel:"Гражданский РФ",favorite:false};
   }
   function resumeYandexGameplay(){
     ysdk?.features?.GameplayAPI?.start();
@@ -320,14 +360,14 @@
     $("rarity-label").textContent="ИДЁТ РОЗЫГРЫШ";$("result-value").textContent="Ищем красивую комбинацию…";$("result-hint").textContent="Удача уже где-то рядом";
     let ticks=0;
     const interval=setInterval(()=>{
-      $("plate-main").textContent=letters[Math.floor(Math.random()*letters.length)]+String(Math.floor(Math.random()*1000)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
-      $("plate-region").textContent=regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
+      const previewType=selectedPlateType(); const preview=previewType==="police"?letters[Math.floor(Math.random()*letters.length)]+" "+String(1000+Math.floor(Math.random()*9000)):previewType==="military"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:previewType==="belarus"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:letters[Math.floor(Math.random()*letters.length)]+String(1+Math.floor(Math.random()*999)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
+      $("plate-main").textContent=preview; $("plate-region").textContent=previewType==="belarus"?"BY":previewType==="military"?"ВОЙСКА":regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
       if(ticks>=10){
         clearInterval(interval);machine.classList.remove("spinning");
         const item=forcedNumber?makeForcedNumber(forcedNumber):makeNumber();state.collection.unshift(item);save();
-        $("plate-main").textContent=item.plate;$("plate-region").textContent=item.region;
+        $("plate-main").textContent=item.plate;$("plate-region").textContent=item.type==="belarus"?"BY":item.region;$("license-plate").dataset.type=item.type||"civil";
         const info=$("result-info");info.className="result-info rarity-"+item.key;
-        $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=item.reason||"Номер добавлен в твою коллекцию";
+        $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=(item.typeLabel?item.typeLabel+" · ":"")+(item.reason||"Номер добавлен в твою коллекцию");
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
         render();showWinAnimation(item);notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
