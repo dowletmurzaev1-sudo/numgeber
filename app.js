@@ -192,7 +192,7 @@
     const sequence=d.length===3&&sequences.includes(d);
     const mirror=d.length===3&&d[0]===d[2]&&d[0]!==d[1];
     const small=d.length===3&&/^00[1-9]$/.test(d);
-    const round=d.length===3&&/^\\d00$/.test(d);
+    const round=d.length===3&&/^\d00$/.test(d);
     const regionMatch=String(region).endsWith(d.slice(-2))||d===String(region).slice(-3);
     const letterMirror=c.length===3&&c[0]===c[2]&&c[0]!==c[1];
     const fullBlat=digitTriple&&letterTriple;
@@ -284,7 +284,6 @@
   function tierForValue(value){
     if(value>=15000000)return tiers[4];
     if(value>=2000000)return tiers[3];
-    if(value>=700000)return tiers[2];
     if(value>=150000)return tiers[2];
     if(value>=10000)return tiers[1];
     return tiers[0];
@@ -372,7 +371,7 @@
     const match=plate.match(/^([АВЕКМНОРСТУХ])(\d{3})([АВЕКМНОРСТУХ]{2})$/);
     if(!match)return makeNumber();
     const region=String(forced.region||"77");
-    const chars=match[1]+match[3], pattern=patternDetails(match[2],chars);
+    const chars=match[1]+match[3], pattern=patternDetails(match[2],chars,region);
     const value=plateValue(match[2],chars,region,pattern,"civil");
     const tier=tierForValue(value);
     return {id:state.nextId++,digits:match[2],chars,region,plate,tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(match[2],chars,region,pattern,"civil"),type:"civil",typeLabel:"Гражданский РФ",favorite:false};
