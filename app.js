@@ -243,6 +243,7 @@
     return regions[Math.floor(Math.random()*regions.length)].trim();
   }
   function makeNumber(){
+    const targetTier=chooseTier();
     const type=selectedPlateType(), region=selectedRegion(type);
     let digits,chars,plate;
     if(type==="police"){
@@ -262,8 +263,26 @@
       chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
       plate=chars[0]+digits+chars.slice(1);
     }
+    if(targetTier.key!=="common"){
+      const premium=["777","888","999","555","111","222","333"];
+      if(type==="civil"||type==="taxi"){
+        if(targetTier.key==="rare"){digits=Math.random()<.5?"00"+(1+Math.floor(Math.random()*9)):"12"+Math.floor(Math.random()*10);chars=chars[0]+chars[0]+chars[2];}
+        if(targetTier.key==="epic"){digits=premium[Math.floor(Math.random()*premium.length)];chars=chars[0]+chars[0]+chars[2];}
+        if(targetTier.key==="mythic"){digits=premium[Math.floor(Math.random()*premium.length)];const l=letters[Math.floor(Math.random()*letters.length)];chars=l+l+l;}
+        if(targetTier.key==="legendary"){digits=["777","888","999"][Math.floor(Math.random()*3)];const l=letters[Math.floor(Math.random()*letters.length)];chars=l+l+l;}
+      }else{
+        digits=targetTier.key==="rare"?"1001":targetTier.key==="epic"?"7777":targetTier.key==="mythic"?"8888":"9999";
+        if(type==="police")chars=letters[Math.floor(Math.random()*letters.length)];
+        else chars=chars[0]+chars[0];
+      }
+      if(type==="civil"||type==="taxi")plate=chars[0]+digits+chars.slice(1);
+      else if(type==="police")plate=chars+" "+digits;
+      else if(type==="military")plate=digits+" "+chars+" "+region;
+      else plate=digits+" "+chars+"-"+(1+Math.floor(Math.random()*7));
+    }
     const pattern=patternDetails(digits,chars,region);
-    const value=plateValue(digits,chars,region,pattern,type);
+    const rawValue=plateValue(digits,chars,region,pattern,type);
+    const value=targetTier.key==="common"?rawValue:Math.round((targetTier.min+Math.random()*(targetTier.max-targetTier.min))/50)*50;
     const tier=tierForValue(value);
     const labels={civil:"Гражданский РФ",police:"Полицейский",taxi:"Такси",military:"Военный",belarus:"Беларусь"};
     return {id:state.nextId++,digits,chars,region,plate,type,typeLabel:labels[type],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(digits,chars,region,pattern,type),favorite:false};
