@@ -24,11 +24,11 @@
   const letters = ["А","В","Е","К","М","Н","О","Р","С","Т","У","Х"];
   const regions = ["77","97","99","177","197","199","777","50","90","150","750","78","98","178","198","23","93","123","116","716","02","102","54","154","66","96","196","74","174","52","152","63","163","61","161"];
   const tiers = [
-    {name:"Обычный",key:"common",weight:69.5,min:100,max:10000,color:"#aeb8c4"},
-    {name:"Редкий",key:"rare",weight:22,min:10001,max:150000,color:"#56a8ff"},
-    {name:"Эпический",key:"epic",weight:7,min:150001,max:2000000,color:"#b78aff"},
-    {name:"Мифический",key:"mythic",weight:1.5,min:2000001,max:15000000,color:"#ff9c54"},
-    {name:"Легендарный",key:"legendary",weight:.5,min:15000001,max:50000000,color:"#f4d16d"}
+    {name:"Обычный",key:"common",weight:69.5,min:100,max:9999,color:"#aeb8c4"},
+    {name:"Необычный",key:"unusual",weight:22,min:10000,max:49999,color:"#56a8ff"},
+    {name:"Редкий",key:"rare",weight:7,min:50000,max:149999,color:"#b78aff"},
+    {name:"Эпический",key:"epic",weight:1.5,min:150000,max:14999999,color:"#ff9c54"},
+    {name:"Легендарный",key:"legendary",weight:.5,min:15000000,max:50000000,color:"#f4d16d"}
   ];
   const $ = id => document.getElementById(id);
   const money = n => Math.round(n).toLocaleString("ru-RU") + " ₽";
@@ -96,7 +96,7 @@
       }).catch(error=>console.error("Cloud save failed:",error.message));
     }
   }
-  function tierRank(key){return ({common:1,rare:2,epic:3,mythic:4,legendary:5})[key]||0;}
+  function tierRank(key){return ({common:1,unusual:2,rare:3,epic:4,legendary:5})[key]||0;}
   function showGame(){
     $("auth-gate").hidden=true;
     document.body.classList.remove("auth-required");
@@ -286,8 +286,8 @@
   }
   function tierForValue(value){
     if(value>=15000000)return tiers[4];
-    if(value>=2000000)return tiers[3];
-    if(value>=150000)return tiers[2];
+    if(value>=150000)return tiers[3];
+    if(value>=50000)return tiers[2];
     if(value>=10000)return tiers[1];
     return tiers[0];
   }
