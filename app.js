@@ -187,6 +187,33 @@
   function specialSeriesInfo(chars,region){
     return SPECIAL_SERIES[String(chars).toUpperCase()+"|"+String(region)]||"";
   }
+  const RARITY_CATALOG = [
+    {kind:"Спецсерия",name:"АМР · 77",detail:"Известная московская серия; игровая ассоциация с правительственным автопарком."},
+    {kind:"Спецсерия",name:"ВМР · 77",detail:"Серия из специальных подборок."},
+    {kind:"Спецсерия",name:"КМР · 77",detail:"Редкая серия в игровых коллекциях."},
+    {kind:"Спецсерия",name:"ММР · 77",detail:"Редкая серия в игровых коллекциях."},
+    {kind:"Спецсерия",name:"ЕКХ · 77 / 97",detail:"Широко известная серия, связываемая в народе с ФСО."},
+    {kind:"Спецсерия",name:"САС · 77",detail:"Серия из специальных подборок."},
+    {kind:"Спецсерия",name:"ХКХ · 77",detail:"Редкая московская серия."},
+    {kind:"Спецсерия",name:"ССС · 77",detail:"Специальная серия из коллекционных подборок."},
+    {kind:"Спецсерия",name:"ООО · 77 / 78",detail:"Исторически известная серия."},
+    {kind:"Спецсерия",name:"ААА · 78",detail:"Редкая серия Санкт-Петербурга."},
+    {kind:"Цифры",name:"777 · 888 · 999",detail:"Три одинаковые цифры — одна из самых заметных комбинаций."},
+    {kind:"Цифры",name:"111 · 222 · 333 · 555",detail:"Тройные повторяющиеся цифры."},
+    {kind:"Цифры",name:"121 · 343 · 787",detail:"Зеркальные комбинации."},
+    {kind:"Цифры",name:"123 · 234 · 567 · 789",detail:"Последовательность цифр по порядку."},
+    {kind:"Цифры",name:"001 · 007 · 009",detail:"Малые номера с ведущими нулями."},
+    {kind:"Цифры",name:"100 · 200 · 500 · 700",detail:"Круглые сотни."},
+    {kind:"Буквы",name:"ААА · ВВВ · ХХХ",detail:"Три одинаковые буквы."},
+    {kind:"Буквы",name:"АВА · ВОВ · ТАТ",detail:"Зеркальные или палиндромные буквы."},
+    {kind:"Совпадения",name:"В888ВВ · Т777ТТ",detail:"Согласованная комбинация цифр и букв."}
+  ];
+  function renderCatalog(query=""){
+    const host=$("catalog-list");if(!host)return;
+    const q=String(query).trim().toLocaleLowerCase("ru");
+    const rows=RARITY_CATALOG.filter(x=>(x.kind+" "+x.name+" "+x.detail).toLocaleLowerCase("ru").includes(q));
+    host.innerHTML=rows.length?rows.map(x=>'<article class="catalog-row"><span>'+escapeHtml(x.kind)+'</span><div><strong>'+escapeHtml(x.name)+'</strong><p>'+escapeHtml(x.detail)+'</p></div></article>').join(""):'<p class="history-empty">Ничего не найдено.</p>';
+  }
   function numberReason(digits,chars,region,pattern,type="civil"){
     const reasons=[];
     const special=specialSeriesInfo(chars,region);
@@ -682,6 +709,10 @@
   document.addEventListener("visibilitychange",()=>{if(document.hidden&&musicContext?.state==="running")musicContext.suspend();else if(!document.hidden&&musicEnabled&&musicContext)musicContext.resume().catch(()=>{});});
   $("settings-close").addEventListener("click",()=>{$("settings-modal").hidden=true;});
   $("settings-modal").addEventListener("click",e=>{if(e.target===$("settings-modal"))$("settings-modal").hidden=true;});
+  $("open-catalog").addEventListener("click",()=>{$("catalog-modal").hidden=false;renderCatalog($("catalog-search").value);});
+  $("catalog-close").addEventListener("click",()=>{$("catalog-modal").hidden=true;});
+  $("catalog-modal").addEventListener("click",e=>{if(e.target===$("catalog-modal"))$("catalog-modal").hidden=true;});
+  $("catalog-search").addEventListener("input",e=>renderCatalog(e.target.value));
   $("collection-open").addEventListener("click",()=>{$("collection-modal").hidden=false;});
   $("collection-close").addEventListener("click",()=>{$("collection-modal").hidden=true;});
   $("collection-modal").addEventListener("click",e=>{if(e.target===$("collection-modal"))$("collection-modal").hidden=true;});
