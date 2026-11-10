@@ -123,7 +123,7 @@
     renderProfileButton();
     try{
       const {data:isAdmin,error:adminError}=await supabase.rpc("is_nomgen_admin");
-      if(!adminError&&isAdmin){adminUser=user;$("admin-secret").hidden=false;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}else{adminUser=null;$("admin-secret").hidden=true;$("admin-panel").hidden=true;}renderAutoClickerWidget();
+      if(!adminError&&isAdmin){adminUser=user;$("admin-secret").hidden=false;$("admin-panel").hidden=false;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}else{adminUser=null;$("admin-secret").hidden=true;$("admin-panel").hidden=true;$("admin-content").hidden=true;}renderAutoClickerWidget();
       const {data:userWeights,error:weightsError}=await supabase.rpc("get_my_rare_weights");
       if(!weightsError&&Array.isArray(userWeights)&&userWeights.length===5&&userWeights.some(x=>Number(x)>0)){weights=normalizeWeights(userWeights);hasCustomWeights=true;}
       const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
@@ -823,7 +823,7 @@
     img.innerHTML=source?'<img src="'+source+'" alt="Аватар">':'<span>'+(escapeHtml((playerName||"И").trim().charAt(0).toUpperCase()||"И"))+'</span>';
     $("profile-button").setAttribute("aria-label","Профиль: "+playerName);
   }
-  $("settings-open").addEventListener("click",()=>{$("profile-modal").hidden=true;$("settings-modal").hidden=false;renderUpgrades();syncMusicControls();});
+  $("settings-open").addEventListener("click",()=>{$("profile-modal").hidden=true;$("settings-modal").hidden=false;if(adminUser){$("admin-panel").hidden=false;$("admin-content").hidden=false;}renderUpgrades();syncMusicControls();});
   function syncMusicControls(){
     $("music-toggle").textContent=musicEnabled?"Выключить фоновую музыку":"Включить фоновую музыку";
     $("music-toggle").classList.toggle("active",musicEnabled);
