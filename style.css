@@ -300,3 +300,15 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 .case-result strong{color:#f4d16d}
 @media(max-width:600px){.case-window{max-height:90svh;overflow:auto}.case-slot{width:96px;flex-basis:96px;height:84px}.case-prices{gap:7px}.case-buy{font-size:10px}}
  .cases-tile{background:linear-gradient(145deg,#51401f,#171d30)}.case-menu-art{display:grid;place-items:center;width:76px;height:76px;border:2px solid #e6c16c;border-radius:12px;background:linear-gradient(145deg,#51401f,#151b2b);color:#ffe08a;font-size:46px;box-shadow:0 0 22px #e6b94f44}.case-menu-art small{font:800 8px Manrope,sans-serif;letter-spacing:1px}
+/* Case icon and roulette alignment fix */
+.case-menu-art{gap:5px;align-content:center}
+.case-icon-box{position:relative;display:block;width:56px;height:39px;border:3px solid #e5c47b;border-radius:7px;background:linear-gradient(145deg,#56677e,#202b40);box-shadow:inset 0 0 0 2px #101827,0 5px 9px #0008;transform:perspective(80px) rotateX(5deg)}
+.case-icon-box:before{content:"";position:absolute;left:-3px;right:-3px;top:6px;height:5px;background:#d5ae61;border-top:1px solid #ffe4a1;border-bottom:1px solid #8a642e}
+.case-icon-box i{position:absolute;left:22px;top:13px;width:9px;height:13px;border:2px solid #e8cb87;border-radius:3px;background:#253044}
+.case-icon-box b{position:absolute;left:5px;top:13px;width:10px;height:8px;border:2px solid #c4d0dc;border-radius:2px}
+.case-roulette{isolation:isolate}
+.case-track{will-change:transform;backface-visibility:hidden}
+.case-slot{box-sizing:border-box;overflow:hidden;text-align:center}
+.case-slot span{max-width:100%;white-space:nowrap;font-size:clamp(12px,3.5vw,15px)}
+.case-slot small{white-space:nowrap}
+.case-pointer{pointer-events:none}
