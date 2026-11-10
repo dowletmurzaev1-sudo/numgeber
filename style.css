@@ -230,3 +230,51 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 .quest-art small{display:block;margin-top:8px;font:800 8px Manrope,sans-serif;letter-spacing:1px}
 .menu-symbol{display:grid;place-items:center;width:76px;height:76px;border:1px solid #ffffff35;border-radius:18px;background:#ffffff12;color:#e7efff;font-size:50px;text-shadow:0 5px 12px #0008}
 @media(max-width:420px){.menu-window{padding:23px 13px 15px}.menu-tiles{gap:8px}.menu-tile{min-height:145px;padding:9px}.menu-tile .tile-art{height:83px}.tile-caption b{font-size:13px}.tile-caption small{font-size:8px}.machine{min-height:465px}}
+
+.mobile-menu-open{display:none}
+@media(max-width:600px){
+ html,body{min-height:100%;height:100%;background:#0e1423}
+ body{padding-bottom:0;overflow-x:hidden}
+ .topbar{height:82px;position:relative;z-index:30;display:flex;justify-content:flex-end;gap:10px;padding:10px 14px 10px 78px;background:#0d1424;border:0}
+ .mobile-menu-open{position:absolute;left:14px;top:13px;width:52px;height:52px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:11px 10px;border:1px solid #ffffff22;border-radius:17px;background:linear-gradient(145deg,#30303a,#171923);box-shadow:0 5px 16px #0006}
+ .mobile-menu-open span{height:3px;width:100%;border-radius:5px;background:#bfc5d0}
+ .brand{display:none}
+ .top-stats{display:flex;gap:7px;margin-left:auto}
+ .stat{gap:0;padding:10px 13px;border:1px solid #ffffff0a;border-radius:22px;background:#1c1e2a}
+ .stat-icon,.stat small,.collection-open,.profile-button{display:none}
+ .stat strong{font-size:15px;margin:0;color:#d2d5df;white-space:nowrap}
+ .shell{width:100%;max-width:none;padding:0}
+ .hero,.stats-panel,.daily-quests-panel,.history-panel,.leaderboard-panel,footer{display:none!important}
+ .game-grid{display:block;margin:0;min-height:calc(100svh - 82px)}
+ .generator-panel{min-height:calc(100svh - 82px);height:calc(100svh - 82px);display:flex;flex-direction:column;justify-content:center;padding:0 14px 16px;border:0;border-radius:0;background:linear-gradient(180deg,#0e1423 0%,#172c50 53%,#0e1423 100%);box-shadow:none}
+ .generator-panel>.panel-heading{display:none}
+ .machine{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:14px 6px 12px;border:0;border-radius:0;background:transparent;overflow:visible;cursor:pointer}
+ .machine-top{display:none}
+ .generator-options{display:flex;justify-content:center;gap:8px;margin:0 auto 22px;width:100%;max-width:420px}
+ .generator-options label{font-size:9px;color:#929caf}
+ .generator-options select{max-width:150px;padding:8px 9px;background:#202331;color:#d0d3dc;border-color:#ffffff12;border-radius:15px}
+ .plate-wrap{width:100%;padding:12px 0 24px;margin:0;cursor:pointer}
+ .license-plate{width:min(100%,520px);height:clamp(86px,22vw,132px);border:5px solid #c3c7c9;border-radius:8px;box-shadow:0 7px 0 #68717b,0 13px 30px #0008,inset 0 0 0 1px #fff;cursor:pointer}
+ .plate-main{font-size:clamp(36px,10vw,66px);letter-spacing:1px}
+ .plate-region-big{font-size:clamp(21px,6vw,35px)}
+ .plate-rus{font-size:10px}
+ .result-info{min-height:76px;margin-top:0;text-align:center}
+ .rarity-label{font-size:14px;letter-spacing:.4px;text-transform:none}
+ .result-info strong{font-size:clamp(22px,5.5vw,30px);margin:5px 0;color:#4e8dff}
+ .result-info small{display:block;font-size:14px;line-height:1.5;color:#929caf}
+ .spin-button,.odds-note,.bottom-nav{display:none}
+ .feature-modal{z-index:200}
+ .menu-window{width:100%;max-width:560px;max-height:calc(100svh - 30px);padding:25px 16px 18px;border:1px solid #ffffff20;background:#111827;border-radius:18px}
+ .menu-window h2{font-size:22px}
+ .menu-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .menu-tile{min-height:145px;border:1px solid #ffffff26;border-radius:12px;box-shadow:0 6px 18px #0004}
+ .menu-tile .tile-art{height:82px}
+ .tile-caption b{text-transform:uppercase;font-size:12px}
+ .tile-caption small{display:none}
+ .menu-backdrop{background:#080b12ed}
+}
+@media(max-height:700px) and (max-width:600px){
+ .generator-panel{padding-top:0}
+ .generator-options{margin-bottom:10px}
+ .plate-wrap{padding:8px 0 14px}
+}
