@@ -22,7 +22,7 @@
   let playerName = localStorage.getItem("nomgen-player-name") || "Игрок";
   let avatarData = localStorage.getItem("nomgen-avatar") || "";
   const letters = ["А","В","Е","К","М","Н","О","Р","С","Т","У","Х"];
-  const regions = ["77","97","99","177","197","199","777","50","90","150","750","78","98","178","198","23","93","123","116","716","02","102","54","154","66","96","196","74","174","52","152","63","163","61","161"];
+  const regions = ["01","101","02","102","702","03","103","04","05","105","06","07","08","09","109","10","11","111","12","13","113","14","15","115","16","116","716","17","18","118","19","21","121","22","122","222","23","93","123","193","323","24","84","88","124","224","25","125","725","26","126","27","28","29","30","130","31","131","32","33","133","34","134","35","36","136","37","38","85","138","39","91","139","40","41","42","142","43","44","45","46","47","147","48","49","50","90","150","190","250","550","750","790","51","52","152","252","53","54","154","754","55","155","56","156","57","58","158","59","159","60","61","161","761","62","63","163","763","64","164","65","66","96","196","67","68","69","169","70","71","72","172","73","173","74","174","774","75","76","176","77","97","99","177","197","199","277","299","777","797","799","977","997","78","98","178","198","778","79","80","180","81","181","82","182","83","84","184","85","185","86","186","87","89","92","192","94","95"];
   const tiers = [
     {name:"Обычный",key:"common",weight:69.5,min:100,max:10000,color:"#aeb8c4"},
     {name:"Редкий",key:"rare",weight:22,min:10001,max:150000,color:"#56a8ff"},
@@ -448,6 +448,44 @@
         render();showWinAnimation(item);notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
       }
     },60);
+  }
+  let caseOpening=false;
+  function casePreview(){
+    const item=makeNumber();
+    return item;
+  }
+  async function openCases(count){
+    if(caseOpening)return;
+    const cost=250000*count;
+    if(state.balance<cost){notify("Недостаточно средств: нужно "+money(cost));return;}
+    caseOpening=true;
+    $("case-buy-one").disabled=true;$("case-buy-five").disabled=true;
+    state.balance-=cost;save();render();
+    $("case-results").innerHTML="";
+    const area=$("case-roulette-area");
+    const items=[];
+    for(let n=0;n<count;n++){
+      const winner=casePreview();items.push(winner);
+      const slots=Array.from({length:42},(_,i)=>i===35?winner:casePreview());
+      const track=document.createElement("div");track.className="case-track";
+      track.innerHTML=slots.map((x,i)=>'<div class="case-slot '+(i===35?'winner':'')+'"><span>'+escapeHtml(x.plate)+'</span><small>'+escapeHtml(x.region)+' · '+escapeHtml(x.tier)+'</small></div>').join("");
+      const wrap=document.createElement("div");wrap.className="case-roulette";wrap.innerHTML='<div class="case-pointer"></div>';wrap.appendChild(track);area.appendChild(wrap);
+      const slotWidth=124;
+      const offset=35*slotWidth+58-(wrap.clientWidth/2);
+      track.style.transition="none";track.style.transform="translateX(0)";
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      track.style.transition="transform "+(count===1?5.2:3.2)+"s cubic-bezier(.08,.72,.08,1)";
+      track.style.transform="translateX(-"+offset+"px)";
+      await new Promise(resolve=>setTimeout(resolve,(count===1?5300:3300)));
+      winner.id=state.nextId++;state.collection.unshift(winner);
+      if(winner.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}
+      const result=document.createElement("div");result.className="case-result";
+      result.innerHTML='<span>'+escapeHtml(winner.plate)+' · '+escapeHtml(winner.region)+' · '+escapeHtml(winner.tier)+'</span><strong>'+money(winner.value)+'</strong>';
+      $("case-results").appendChild(result);
+      save();render();
+    }
+    caseOpening=false;$("case-buy-one").disabled=false;$("case-buy-five").disabled=false;
+    notify(count===1?"Кейс открыт! "+items[0].plate:"Открыто 5 кейсов!");
   }
   function sell(id){
     const index=state.collection.findIndex(x=>x.id===id);if(index<0)return;
@@ -942,7 +980,7 @@
   $("collection-grid").addEventListener("click",e=>{const fav=e.target.closest("[data-favorite]");if(fav){toggleFavorite(Number(fav.dataset.favorite));return;}const btn=e.target.closest("[data-sell]");if(btn)sell(Number(btn.dataset.sell));});
   $("sell-duplicates").addEventListener("click",sellDuplicates);
   $("sell-all").addEventListener("click",sellAll);
-  $("leaders-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);$("menu-button").classList.remove("active");$("home-button").classList.remove("active");$("leaders-button").classList.add("active");$("leaderboard-panel")?.scrollIntoView({behavior:"smooth",block:"start"});});
+  $("leaders-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);$("leaderboard-panel").classList.add("leaderboard-open");refreshLeaderboard();$("menu-button").classList.remove("active");$("home-button").classList.remove("active");$("leaders-button").classList.add("active");$("leaderboard-panel")?.scrollIntoView({behavior:"smooth",block:"start"});});
   $("menu-open-top").addEventListener("click",()=>{$("menu-modal").hidden=false;});
   $("menu-button").addEventListener("click",()=>{$("menu-modal").hidden=false;$("menu-button").classList.add("active");$("home-button").classList.remove("active");$("leaders-button").classList.remove("active");});
   $("menu-close").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");});
@@ -951,14 +989,20 @@
   $("menu-upgrades").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");$("upgrade-modal").hidden=false;renderUpgrades();});
   $("upgrade-close").addEventListener("click",()=>$("upgrade-modal").hidden=true);
   $("upgrade-modal").addEventListener("click",e=>{if(e.target===$("upgrade-modal"))$("upgrade-modal").hidden=true;});
-  $("menu-generator").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");window.scrollTo({top:0,behavior:"smooth"});});
+  $("menu-generator").addEventListener("click",()=>{$("leaderboard-panel").classList.remove("leaderboard-open");$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");window.scrollTo({top:0,behavior:"smooth"});});
   $("menu-quests").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");$("daily-quests").scrollIntoView({behavior:"smooth",block:"start"});});
-  $("menu-leaders").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.remove("active");$("leaders-button").classList.add("active");$("leaderboard-panel").scrollIntoView({behavior:"smooth",block:"start"});});
+  $("menu-leaders").addEventListener("click",()=>{$("leaderboard-panel").classList.add("leaderboard-open");refreshLeaderboard();$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.remove("active");$("leaders-button").classList.add("active");$("leaderboard-panel").scrollIntoView({behavior:"smooth",block:"start"});});
+  $("menu-cases").addEventListener("click",()=>{$("menu-modal").hidden=true;$("cases-modal").hidden=false;$("case-results").innerHTML="";$("case-roulette-area").innerHTML="";});
+  $("cases-close").addEventListener("click",()=>{$("cases-modal").hidden=true;});
+  $("cases-modal").addEventListener("click",e=>{if(e.target===$("cases-modal"))$("cases-modal").hidden=true;});
+  $("case-buy-one").addEventListener("click",()=>openCases(1));
+  $("case-buy-five").addEventListener("click",()=>openCases(5));
   $("menu-profile").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");$("profile-button").click();});
-  $("home-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");window.scrollTo({top:0,behavior:"smooth"});});
+  $("home-button").addEventListener("click",()=>{$("leaderboard-panel").classList.remove("leaderboard-open");document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");window.scrollTo({top:0,behavior:"smooth"});});
   $("sort-select").addEventListener("change",render);
   $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция, история и улучшения будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
   $("player-name").value=playerName;
+  refreshLeaderboard();
   render();
   renderUpgrades();
   
