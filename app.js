@@ -256,6 +256,8 @@
     if(type==="taxi")reasons.push("Жёлтый номер такси");
     if(type==="military")reasons.push("Военный формат номера");
     if(type==="belarus")reasons.push("Белорусский формат номера");
+    if(type==="kazakhstan")reasons.push("Казахстанский формат номера");
+    if(type==="ukraine")reasons.push("Украинский формат номера");
     if(!reasons.length)reasons.push("Обычная комбинация без дополнительных признаков редкости");
     return reasons.join(" · ");
   }
@@ -987,7 +989,7 @@
   function updateCountryDisplay(){
     const country=selectedCountry;
     document.querySelectorAll("[data-country-choice]").forEach(el=>{el.classList.toggle("active",el.dataset.countryChoice===country);el.setAttribute("aria-pressed",String(el.dataset.countryChoice===country));});
-    $("plate-type").disabled=country!=="ru";$("plate-region-select").disabled=country!=="ru";
+    $("plate-type").disabled=country!=="ru";$("plate-region-select").disabled=country!=="ru";document.querySelector(".generator-options").hidden=country!=="ru";
     $("license-plate").dataset.country=country;
     $("license-plate").dataset.type="civil";
     $("plate-main").textContent=country==="kazakhstan"?"123 ABC":country==="ukraine"?"AA 1234 BB":country==="belarus"?"1234 AB":"А000АА";
