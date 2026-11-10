@@ -670,16 +670,16 @@
     const host=$("odds-controls");if(!host)return;
     const total=weights.reduce((a,b)=>a+b,0);
     host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(weights[i]||0)+'"><b>'+((total?weights[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
-    const saveButton=$("apply-odds");if(saveButton)saveButton.hidden=true;
-    host.querySelectorAll("[data-odds]").forEach(input=>input.addEventListener("input",()=>{if(saveButton)saveButton.hidden=false;}));
+    const saveButton=$("apply-odds");if(saveButton)saveButton.style.display="none";
+    host.querySelectorAll("[data-odds]").forEach(input=>input.addEventListener("input",()=>{if(saveButton)saveButton.style.display="block";}));
   }
   function renderGlobalOdds(values){
     const host=$("global-odds-controls");if(!host)return;
     const safe=Array.isArray(values)&&values.length===5?values.map(Number):[...DEFAULT_WEIGHTS];
     const total=safe.reduce((a,b)=>a+b,0);
     host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-global-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(safe[i]||0)+'"><b>'+((total?safe[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
-    const saveButton=$("apply-global-odds");if(saveButton)saveButton.hidden=true;
-    host.querySelectorAll("[data-global-odds]").forEach(input=>input.addEventListener("input",()=>{if(saveButton)saveButton.hidden=false;}));
+    const saveButton=$("apply-global-odds");if(saveButton)saveButton.style.display="none";
+    host.querySelectorAll("[data-global-odds]").forEach(input=>input.addEventListener("input",()=>{if(saveButton)saveButton.style.display="block";}));
   }
   async function loadGlobalOdds(){
     if(!supabase)return;
