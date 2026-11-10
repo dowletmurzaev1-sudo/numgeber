@@ -671,6 +671,20 @@
     const total=weights.reduce((a,b)=>a+b,0);
     host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(weights[i]||0)+'"><b>'+((total?weights[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
   }
+  function renderGlobalOdds(values){
+    const host=$("global-odds-controls");if(!host)return;
+    const safe=Array.isArray(values)&&values.length===5?values.map(Number):[...DEFAULT_WEIGHTS];
+    const total=safe.reduce((a,b)=>a+b,0);
+    host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-global-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(safe[i]||0)+'"><b>'+((total?safe[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
+  }
+  async function loadGlobalOdds(){
+    if(!supabase)return;
+    const {data,error}=await supabase.from("nomgen_settings").select("weights").eq("id",1).single();
+    if(error){$("global-odds-status").textContent="Не удалось загрузить глобальные шансы: "+error.message;return;}
+    const values=Array.isArray(data?.weights)&&data.weights.length===5?normalizeWeights(data.weights):[...DEFAULT_WEIGHTS];
+    renderGlobalOdds(values);
+    $("global-odds-status").textContent="Глобальные шансы загружены.";
+  }
   async function initGamePlatform(){
     const onYandexHost=location.hostname.toLowerCase().includes("yandex.");
     if(!onYandexHost){initSupabase();return;}
@@ -813,7 +827,8 @@
   function selectAdminTab(tab){
     document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.toggle("active",b.dataset.adminTab===tab));
     ["players","odds","money","forced","autoclick"].forEach(name=>$("admin-"+name).hidden=name!==tab);
-    if(tab==="players"||tab==="money")loadAdminPlayers();
+    if(tab==="players"||tab==="odds"||tab==="money"||tab==="forced")loadAdminPlayers();
+    if(tab==="odds")loadGlobalOdds();
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
   function showRegistrationSuccess(){
@@ -1067,8 +1082,24 @@
     if(userId===currentUser?.id){state.balance=balance;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render();}
     notify("Баланс игрока обновлён");await loadAdminPlayers();await refreshLeaderboard();
   });
+  $("apply-global-odds").addEventListener("click",async()=>{
+    if(!supabase||!adminUser){notify("Войди как администратор");return;}
+    const next=Array.from(document.querySelectorAll("[data-global-odds]"),el=>Math.max(0,Number(el.value)||0));
+    if(next.length!==5||next.every(x=>x===0)){notify("Хотя бы один глобальный вес должен быть больше нуля");return;}
+    const {error}=await supabase.from("nomgen_settings").update({weights:next,updated_at:new Date().toISOString()}).eq("id",1);
+    if(error){$("global-odds-status").textContent="Не удалось сохранить глобальные шансы: "+error.message;notify("Не удалось сохранить глобальные шансы");return;}
+    renderGlobalOdds(next);$("global-odds-status").textContent="Глобальные шансы сохранены.";notify("Глобальные шансы обновлены");
+  });
+  $("reset-global-odds").addEventListener("click",async()=>{
+    if(!supabase||!adminUser){notify("Войди как администратор");return;}
+    const {error}=await supabase.from("nomgen_settings").update({weights:[...DEFAULT_WEIGHTS],updated_at:new Date().toISOString()}).eq("id",1);
+    if(error){$("global-odds-status").textContent="Не удалось сбросить глобальные шансы: "+error.message;notify("Не удалось сбросить глобальные шансы");return;}
+    renderGlobalOdds(DEFAULT_WEIGHTS);$("global-odds-status").textContent="Стандартные глобальные шансы восстановлены.";notify("Глобальные шансы сброшены");
+  });
   $("odds-player").addEventListener("change",async()=>{
-    const {data,error}=await supabase.rpc("admin_get_player_weights",{target_user_id:$("odds-player").value});
+    const userId=$("odds-player").value;
+    if(!userId)return;
+    const {data,error}=await supabase.rpc("admin_get_player_weights",{target_user_id:userId});
     if(error){$("odds-status").textContent="Не удалось загрузить шансы: "+error.message;return;}
     weights=Array.isArray(data)?normalizeWeights(data):[...DEFAULT_WEIGHTS];renderOdds();
   });
