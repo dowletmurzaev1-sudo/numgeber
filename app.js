@@ -419,6 +419,7 @@
     }});
   });
   let activeSpinSkip=null;
+  let ignoreNextMachineClick=false;
   async function spin(){
     if($("spin-button").disabled)return false;
     if(state.balance<COST){notify("Недостаточно средств для попытки");return false;}
@@ -982,6 +983,7 @@
   $("spin-button").addEventListener("click",spin);
   // На экране генератора можно запускать прокрутку нажатием почти в любое место.
   document.querySelector(".machine").addEventListener("click",event=>{
+    if(ignoreNextMachineClick){ignoreNextMachineClick=false;return;}
     if(event.target.closest("button,select,label,input,a"))return;
     if(!$("spin-button").disabled)spin();
   });
@@ -1059,7 +1061,7 @@
     $("forced-status").textContent="Назначенный номер отменён.";
     notify("Настройка выпадения отменена");
   });
-  document.addEventListener("pointerdown",()=>{if(activeSpinSkip)activeSpinSkip();},{capture:true});
+  document.addEventListener("pointerdown",event=>{if(activeSpinSkip){ignoreNextMachineClick=!!event.target.closest(".machine");activeSpinSkip();}},{capture:true});
   $("win-close").addEventListener("click",()=>{$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);});
   $("win-overlay").addEventListener("click",e=>{if(e.target===$("win-overlay")){$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);}});
   document.addEventListener("keydown",e=>{if(e.key==="Escape")$("win-overlay").classList.remove("visible");});
