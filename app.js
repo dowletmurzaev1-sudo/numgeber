@@ -418,58 +418,82 @@
       }
     }});
   });
+  let activeSpinSkip=null;
   async function spin(){
-    if($("spin-button").disabled)return;
-    if(state.balance<COST){notify("Недостаточно средств для попытки");return;}
+    if($("spin-button").disabled)return false;
+    if(state.balance<COST){notify("Недостаточно средств для попытки");return false;}
     const btn=$("spin-button");
     btn.disabled=true;btn.querySelector("span:nth-child(2)").textContent="ГЕНЕРАТОР ЗАПУЩЕН";
     let forcedNumber=null;
     if(currentUser&&supabase){
       const {data,error}=await supabase.rpc("consume_forced_number");
-      if(error){btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";notify("Не удалось проверить настройку номера: "+error.message);return;}
+      if(error){btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";notify("Не удалось проверить настройку номера: "+error.message);return false;}
       forcedNumber=data;
     }
     ensureDailyState();state.dailyQuests.spins++;state.balance-=COST;state.spins++;save();render();
     const machine=$("plate-wrap");
     machine.classList.add("spinning");
     $("rarity-label").textContent="ИДЁТ РОЗЫГРЫШ";$("result-value").textContent="Ищем красивую комбинацию…";$("result-hint").textContent="Удача уже где-то рядом";
-    let ticks=0;
-    const interval=setInterval(()=>{
-      const previewType=selectedPlateType(); const preview=previewType==="police"?letters[Math.floor(Math.random()*letters.length)]+" "+String(1000+Math.floor(Math.random()*9000)):previewType==="military"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:previewType==="belarus"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:letters[Math.floor(Math.random()*letters.length)]+String(1+Math.floor(Math.random()*999)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
-      $("plate-main").textContent=preview; $("plate-region").textContent=previewType==="belarus"?"BY":previewType==="military"?"ВОЙСКА":regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
-      if(ticks>=10){
-        clearInterval(interval);machine.classList.remove("spinning");
-        const item=forcedNumber?makeForcedNumber(forcedNumber):makeNumber();if(item.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}state.collection.unshift(item);save();
+    const item=forcedNumber?makeForcedNumber(forcedNumber):makeNumber();
+    let ticks=0,finished=false,interval=null;
+    return new Promise(resolve=>{
+      const finish=()=>{
+        if(finished)return;
+        finished=true;
+        if(interval!==null)clearInterval(interval);
+        activeSpinSkip=null;
+        machine.classList.remove("spinning");
+        if(item.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}
+        state.collection.unshift(item);save();
         $("plate-main").textContent=item.plate;$("plate-region").textContent=item.type==="belarus"?"BY":item.region;$("license-plate").dataset.type=item.type||"civil";
         const info=$("result-info");info.className="result-info rarity-"+item.key;
         $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=(item.typeLabel?item.typeLabel+" · ":"")+(item.reason||"Номер добавлен в твою коллекцию");
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
         btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";
         render();showWinAnimation(item);notify(item.key==="legendary"?"ЛЕГЕНДАРНАЯ НАХОДКА! "+item.plate:item.tier+": "+item.plate+" — "+money(item.value));
-      }
-    },60);
+        resolve(true);
+      };
+      // Обычные, редкие и эпические прокрутки можно завершить касанием экрана.
+      if(tierRank(item.key)<4)activeSpinSkip=finish;
+      interval=setInterval(()=>{
+        const previewType=selectedPlateType();
+        const preview=previewType==="police"?letters[Math.floor(Math.random()*letters.length)]+" "+String(1000+Math.floor(Math.random()*9000)):previewType==="military"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:previewType==="belarus"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:letters[Math.floor(Math.random()*letters.length)]+String(1+Math.floor(Math.random()*999)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
+        $("plate-main").textContent=preview;$("plate-region").textContent=previewType==="belarus"?"BY":previewType==="military"?"ВОЙСКА":regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
+        if(ticks>=10)finish();
+      },60);
+    });
   }
   let autoSpinTimer=null;
+  let autoSpinRunning=false;
   let autoSpinCount=0;
   function stopAutoSpin(message="Автокликер остановлен."){
-    if(autoSpinTimer!==null){clearInterval(autoSpinTimer);autoSpinTimer=null;}
+    autoSpinRunning=false;
+    if(autoSpinTimer!==null){clearTimeout(autoSpinTimer);autoSpinTimer=null;}
     const start=$("auto-spin-start"),stop=$("auto-spin-stop"),status=$("auto-spin-status");
     if(start)start.disabled=false;
     if(stop)stop.disabled=true;
     if(status)status.textContent=message+" Выполнено прокруток: "+autoSpinCount+". Баланс: "+money(state.balance);
   }
+  async function runAutoSpin(){
+    autoSpinTimer=null;
+    if(!autoSpinRunning)return;
+    if(!adminUser){stopAutoSpin("Доступ администратора потерян.");return;}
+    if(state.balance<COST){stopAutoSpin("Деньги закончились.");return;}
+    autoSpinCount++;
+    const completed=await spin();
+    if(!autoSpinRunning)return;
+    if(!completed){stopAutoSpin("Автокликер остановлен: прокрутка не выполнена.");return;}
+    if(state.balance<COST){stopAutoSpin("Деньги закончились.");return;}
+    autoSpinTimer=setTimeout(runAutoSpin,1);
+  }
   function startAutoSpin(){
-    if(!adminUser||currentUser?.id!==adminUser.id){notify("Автокликер доступен только администратору");return;}
-    if(autoSpinTimer!==null)return;
+    if(!adminUser){notify("Автокликер доступен только администратору");return;}
+    if(autoSpinRunning)return;
     if(state.balance<COST){notify("Недостаточно средств для запуска автокликера");return;}
-    autoSpinCount=0;
+    autoSpinCount=0;autoSpinRunning=true;
     $("auto-spin-start").disabled=true;$("auto-spin-stop").disabled=false;
-    $("auto-spin-status").textContent="Автокликер работает: проверка каждые 1 мс. Баланс: "+money(state.balance);
-    autoSpinTimer=setInterval(()=>{
-      if(!adminUser||currentUser?.id!==adminUser.id){stopAutoSpin("Доступ администратора потерян.");return;}
-      if(state.balance<COST){stopAutoSpin("Деньги закончились.");return;}
-      if(!$("spin-button").disabled){autoSpinCount++;spin();}
-    },1);
+    $("auto-spin-status").textContent="Автокликер включён: пауза 1 мс между прокрутками. Скорость также зависит от анимации и загрузки игры.";
+    autoSpinTimer=setTimeout(runAutoSpin,1);
   }
   let caseOpening=false;
   function casePreview(){
@@ -1035,6 +1059,7 @@
     $("forced-status").textContent="Назначенный номер отменён.";
     notify("Настройка выпадения отменена");
   });
+  document.addEventListener("pointerdown",()=>{if(activeSpinSkip)activeSpinSkip();},{capture:true});
   $("win-close").addEventListener("click",()=>{$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);});
   $("win-overlay").addEventListener("click",e=>{if(e.target===$("win-overlay")){$("win-overlay").classList.remove("visible");clearTimeout(winOverlayTimer);}});
   document.addEventListener("keydown",e=>{if(e.key==="Escape")$("win-overlay").classList.remove("visible");});
