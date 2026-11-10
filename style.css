@@ -351,3 +351,5 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
  .license-plate[data-country="ukraine"] .plate-main{font-size:clamp(19px,5vw,29px)}
  .license-plate[data-country="belarus"] .plate-rus,.license-plate[data-country="kazakhstan"] .plate-rus,.license-plate[data-country="ukraine"] .plate-rus{width:40px;min-width:40px;font-size:11px}
 }
+
+.license-plate[data-country="belarus"] .plate-region-big,.license-plate[data-country="ukraine"] .plate-region-big{display:none}
