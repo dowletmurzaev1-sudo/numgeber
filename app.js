@@ -257,30 +257,27 @@
     return reasons.join(" · ");
   }
   function plateValue(digits,chars,region,pattern,type="civil"){
-    const d=String(digits), c=String(chars).toUpperCase(), r=String(region);
-    const special=!!specialSeriesInfo(c,r);
-    const moscow=["77","97","99","177","197","199","777","797"].includes(r);
-    // Игровая оценка по открытым объявлениям: комбинация важнее случайного множителя.
-    let value=2000+Math.random()*8000;
-    if(pattern.mirror||pattern.sequence)value=Math.max(value,30000+Math.random()*120000);
-    if(pattern.round)value=Math.max(value,50000+Math.random()*250000);
-    if(pattern.small)value=Math.max(value,150000+Math.random()*600000);
-    if(pattern.digitPairs||pattern.letterPairs)value=Math.max(value,50000+Math.random()*180000);
-    if(pattern.digitTriple){
-      const base=d==="777"?700000:d==="999"||d==="111"?500000:d==="888"||d==="555"||d==="333"?400000:d==="666"||d==="222"?250000:150000;
-      value=Math.max(value,base*(moscow?2.5:1)*(0.8+Math.random()*0.4));
-    }
-    if(pattern.letterTriple)value=Math.max(value,(200000+Math.random()*1300000)*(moscow?1.25:1));
-    if(pattern.regionMatch)value=Math.max(value,150000+Math.random()*450000);
-    if(pattern.digitTriple&&pattern.letterTriple)value=Math.max(value,2500000+Math.random()*10000000);
-    if(special){
-      const elite=c==="АМР"&&r==="77";
-      value=Math.max(value,elite?6500000+Math.random()*1800000:900000+Math.random()*3500000);
-    }
-    if(d==="444")value*=0.65;
-    if(type==="police"||type==="military"||type==="belarus")value*=0.7;
-    if(type==="taxi")value*=0.85;
-    return Math.max(100,Math.min(50000000,Math.round(value/1000)*1000));
+    const special=!!specialSeriesInfo(chars,region);
+    let multiplier=1;
+    if(pattern.digitTriple)multiplier*=18;
+    else if(pattern.digitPairs)multiplier*=2.2;
+    if(pattern.letterTriple)multiplier*=9;
+    else if(pattern.letterPairs)multiplier*=1.8;
+    if(pattern.sequence)multiplier*=3;
+    if(pattern.mirror)multiplier*=3;
+    if(pattern.small)multiplier*=4;
+    if(pattern.round)multiplier*=1.8;
+    if(pattern.regionMatch)multiplier*=2.5;
+    if(pattern.letterMirror)multiplier*=1.8;
+    if(["777","888","999"].includes(String(digits)))multiplier*=3;
+    if(["77","97","99","177","197","199","777"].includes(String(region)))multiplier*=1.35;
+    if(special)multiplier*=12;
+    if(type==="police")multiplier*=1.5;
+    if(type==="taxi")multiplier*=1.15;
+    if(type==="military")multiplier*=2;
+    if(type==="belarus")multiplier*=1.1;
+    const base=100+Math.random()*1900;
+    return Math.max(100,Math.min(50000000,Math.round(base*multiplier/50)*50));
   }
   function tierForValue(value){
     if(value>=15000000)return tiers[4];
@@ -341,7 +338,7 @@
     }
     const pattern=patternDetails(digits,chars,region);
     const rawValue=plateValue(digits,chars,region,pattern,type);
-    const value=rawValue;
+    const value=targetTier.key==="common"?rawValue:Math.round((targetTier.min+Math.random()*(targetTier.max-targetTier.min))/50)*50;
     const tier=tierForValue(value);
     const labels={civil:"Гражданский РФ",police:"Полицейский",taxi:"Такси",military:"Военный",belarus:"Беларусь"};
     return {id:state.nextId++,digits,chars,region,plate,type,typeLabel:labels[type],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(digits,chars,region,pattern,type),favorite:false};
@@ -946,6 +943,7 @@
   $("sell-duplicates").addEventListener("click",sellDuplicates);
   $("sell-all").addEventListener("click",sellAll);
   $("leaders-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);$("menu-button").classList.remove("active");$("home-button").classList.remove("active");$("leaders-button").classList.add("active");$("leaderboard-panel")?.scrollIntoView({behavior:"smooth",block:"start"});});
+  $("menu-open-top").addEventListener("click",()=>{$("menu-modal").hidden=false;});
   $("menu-button").addEventListener("click",()=>{$("menu-modal").hidden=false;$("menu-button").classList.add("active");$("home-button").classList.remove("active");$("leaders-button").classList.remove("active");});
   $("menu-close").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");});
   $("menu-modal").addEventListener("click",e=>{if(e.target===$("menu-modal")){$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");}});
