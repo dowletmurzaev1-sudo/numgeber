@@ -4,7 +4,11 @@
   const STORAGE_KEY = "nomgen-save-v1";
   const ODDS_KEY = "nomgen-odds-v1";
   const PLAYERS_KEY = "nomgen-players-v1";
-  const DEFAULT_WEIGHTS = [69.5,22,7,1.5,.5];
+  const DEFAULT_WEIGHTS = [95,4,.8,.18,.02];
+  function normalizeWeights(list){
+    const legacy=[69.5,22,7,1.5,.5];
+    return Array.isArray(list)&&list.length===5&&list.every((v,i)=>Math.abs(Number(v)-legacy[i])<0.0001)?[...DEFAULT_WEIGHTS]:list.map(Number);
+  }
   let weights = [...DEFAULT_WEIGHTS];
   let hasCustomWeights = false;
   let players = [];
@@ -15,6 +19,7 @@
   let yandexSaveQueue = Promise.resolve();
   let yandexFullscreenTimer = null;
   let adminUser = null;
+  let autoSpinTickMs = 60;
   let currentUser = null;
   let playerReady = false;
   let loadingUserId = null;
@@ -118,9 +123,9 @@
     renderProfileButton();
     try{
       const {data:isAdmin,error:adminError}=await supabase.rpc("is_nomgen_admin");
-      if(!adminError&&isAdmin){adminUser=user;$("admin-secret").hidden=false;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}else{adminUser=null;$("admin-secret").hidden=true;$("admin-panel").hidden=true;}
+      if(!adminError&&isAdmin){adminUser=user;$("admin-secret").hidden=false;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();}else{adminUser=null;$("admin-secret").hidden=true;$("admin-panel").hidden=true;}renderAutoClickerWidget();
       const {data:userWeights,error:weightsError}=await supabase.rpc("get_my_rare_weights");
-      if(!weightsError&&Array.isArray(userWeights)&&userWeights.length===5&&userWeights.some(x=>Number(x)>0)){weights=userWeights.map(Number);hasCustomWeights=true;}
+      if(!weightsError&&Array.isArray(userWeights)&&userWeights.length===5&&userWeights.some(x=>Number(x)>0)){weights=normalizeWeights(userWeights);hasCustomWeights=true;}
       const {data,error}=await supabase.from("nomgen_saves").select("game_state").eq("user_id",user.id).maybeSingle();
       if(error)throw error;
       if(data?.game_state && typeof data.game_state.balance==="number"){
@@ -295,7 +300,7 @@
     if(selectedCountry!=="ru")return selectedCountry;
     const chosen=$("plate-type")?.value||"all";
     if(chosen!=="all")return chosen;
-    const pool=["civil","civil","civil","taxi","police","military","belarus"];
+    const pool=["civil","civil","civil","taxi","police","military"];
     return pool[Math.floor(Math.random()*pool.length)];
   }
   function selectedRegion(type){
@@ -467,19 +472,32 @@
         const preview=previewType==="police"?letters[Math.floor(Math.random()*letters.length)]+" "+String(1000+Math.floor(Math.random()*9000)):previewType==="military"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:previewType==="belarus"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:letters[Math.floor(Math.random()*letters.length)]+String(1+Math.floor(Math.random()*999)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
         $("plate-main").textContent=preview;$("plate-region").textContent=previewType==="belarus"?"BY":previewType==="military"?"ВОЙСКА":regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
         if(ticks>=10)finish();
-      },60);
+      },autoSpinTickMs);
     });
   }
   let autoSpinTimer=null;
   let autoSpinRunning=false;
   let autoSpinCount=0;
+  function renderAutoClickerWidget(){
+    const widget=$("admin-autoclick-widget");
+    if(!widget)return;
+    const visible=!!adminUser&&localStorage.getItem("nomgen-admin-autoclick-visible")==="1";
+    widget.hidden=!visible;
+    if(!adminUser&&autoSpinRunning)stopAutoSpin("Доступ администратора потерян.");
+  }
+  function setAutoSpinStatus(message){
+    const full=message+" Выполнено прокруток: "+autoSpinCount+". Баланс: "+money(state.balance);
+    const screen=$("auto-spin-status-screen"),admin=$("auto-spin-status");
+    if(screen)screen.textContent=full;
+    if(admin)admin.textContent=full;
+  }
   function stopAutoSpin(message="Автокликер остановлен."){
     autoSpinRunning=false;
     if(autoSpinTimer!==null){clearTimeout(autoSpinTimer);autoSpinTimer=null;}
-    const start=$("auto-spin-start"),stop=$("auto-spin-stop"),status=$("auto-spin-status");
+    const start=$("auto-spin-start-screen"),stop=$("auto-spin-stop-screen");
     if(start)start.disabled=false;
     if(stop)stop.disabled=true;
-    if(status)status.textContent=message+" Выполнено прокруток: "+autoSpinCount+". Баланс: "+money(state.balance);
+    setAutoSpinStatus(message);
   }
   async function runAutoSpin(){
     autoSpinTimer=null;
@@ -495,11 +513,14 @@
   }
   function startAutoSpin(){
     if(!adminUser){notify("Автокликер доступен только администратору");return;}
+    if(localStorage.getItem("nomgen-admin-autoclick-visible")!=="1"){notify("Сначала добавь автокликер на экран генератора в админ-панели");return;}
     if(autoSpinRunning)return;
     if(state.balance<COST){notify("Недостаточно средств для запуска автокликера");return;}
     autoSpinCount=0;autoSpinRunning=true;
-    $("auto-spin-start").disabled=true;$("auto-spin-stop").disabled=false;
-    $("auto-spin-status").textContent="Автокликер включён: пауза 1 мс между прокрутками. Скорость также зависит от анимации и загрузки игры.";
+    const start=$("auto-spin-start-screen"),stop=$("auto-spin-stop-screen");
+    if(start)start.disabled=true;
+    if(stop)stop.disabled=false;
+    setAutoSpinStatus("Автокликер включён. Скорость: "+autoSpinTickMs+" мс на шаг анимации.");
     autoSpinTimer=setTimeout(runAutoSpin,1);
   }
   let caseOpening=false;
@@ -926,7 +947,7 @@
   $("guest-login").addEventListener("click",async()=>{
     const accepted=confirm("ВНИМАНИЕ! Гостевой режим начнётся с нуля. Весь текущий прогресс на этом устройстве — баланс, коллекция и история — будет сброшен. Прогресс гостя не сохраняется в Google-аккаунте. Продолжить?");
     if(!accepted)return;
-    currentUser=null;adminUser=null;playerReady=false;
+    currentUser=null;adminUser=null;playerReady=false;renderAutoClickerWidget();
     if(supabase) await supabase.auth.signOut();
     state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;
     localStorage.removeItem(STORAGE_KEY);
@@ -959,7 +980,7 @@
       $("spin-button").disabled=true;
     }
     $("profile-modal").hidden=true;$("settings-modal").hidden=true;
-    $("admin-secret").hidden=true;$("admin-panel").hidden=true;
+    $("admin-secret").hidden=true;$("admin-panel").hidden=true;renderAutoClickerWidget();
   }
   $("logout-button").addEventListener("click",logoutAccount);
   $("yandex-auth").addEventListener("click",async()=>{
@@ -1024,7 +1045,7 @@
     if(error){notify("Ошибка входа: "+error.message);return;}
     const {data:isAdmin,error:roleError}=await supabase.rpc("is_nomgen_admin");
     if(roleError||!isAdmin){await supabase.auth.signOut();notify("У аккаунта нет прав администратора");return;}
-    adminUser=data.user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();$("odds-status").textContent="Вход выполнен: "+email;selectAdminTab("players");
+    adminUser=data.user;$("admin-content").hidden=false;$("admin-toggle").textContent="Скрыть";renderOdds();renderAutoClickerWidget();$("odds-status").textContent="Вход выполнен: "+email;selectAdminTab("players");
   });
   document.querySelectorAll("[data-admin-tab]").forEach(b=>b.addEventListener("click",()=>selectAdminTab(b.dataset.adminTab)));
   $("refresh-admin-players").addEventListener("click",loadAdminPlayers);
@@ -1040,7 +1061,7 @@
   $("odds-player").addEventListener("change",async()=>{
     const {data,error}=await supabase.rpc("admin_get_player_weights",{target_user_id:$("odds-player").value});
     if(error){$("odds-status").textContent="Не удалось загрузить шансы: "+error.message;return;}
-    weights=Array.isArray(data)?data.map(Number):[...DEFAULT_WEIGHTS];renderOdds();
+    weights=Array.isArray(data)?normalizeWeights(data):[...DEFAULT_WEIGHTS];renderOdds();
   });
   $("apply-odds").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
@@ -1071,8 +1092,18 @@
     $("forced-status").textContent="Назначено: "+plate+" · регион "+region+" · выпадет на "+count+"-й попытке.";
     notify("Номер назначен выбранному игроку");
   });
-  $("auto-spin-start").addEventListener("click",startAutoSpin);
-  $("auto-spin-stop").addEventListener("click",()=>stopAutoSpin());
+  $("admin-autoclick-add").addEventListener("click",()=>{
+    if(!adminUser){notify("Войди как администратор");return;}
+    const add=confirm("Добавить панель автокликера на экран генератора?\n\nОК — Да, добавить.\nОтмена — Нет, оставить скрытой.");
+    if(add){localStorage.setItem("nomgen-admin-autoclick-visible","1");renderAutoClickerWidget();notify("Панель автокликера добавлена на экран генератора");}
+    else{localStorage.removeItem("nomgen-admin-autoclick-visible");stopAutoSpin("Панель автокликера скрыта.");renderAutoClickerWidget();notify("Панель автокликера не добавлена");}
+  });
+  $("auto-spin-start-screen").addEventListener("click",startAutoSpin);
+  $("auto-spin-stop-screen").addEventListener("click",()=>stopAutoSpin());
+  $("auto-spin-speed").addEventListener("change",()=>{
+    autoSpinTickMs=Math.max(20,Math.min(150,Number($("auto-spin-speed").value)||60));
+    if(autoSpinRunning)setAutoSpinStatus("Автокликер включён. Новая скорость: "+autoSpinTickMs+" мс на шаг анимации.");
+  });
   $("forced-clear").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
     const userId=$("forced-player").value;
