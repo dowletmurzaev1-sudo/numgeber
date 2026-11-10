@@ -449,6 +449,28 @@
       }
     },60);
   }
+  let autoSpinTimer=null;
+  let autoSpinCount=0;
+  function stopAutoSpin(message="Автокликер остановлен."){
+    if(autoSpinTimer!==null){clearInterval(autoSpinTimer);autoSpinTimer=null;}
+    const start=$("auto-spin-start"),stop=$("auto-spin-stop"),status=$("auto-spin-status");
+    if(start)start.disabled=false;
+    if(stop)stop.disabled=true;
+    if(status)status.textContent=message+" Выполнено прокруток: "+autoSpinCount+". Баланс: "+money(state.balance);
+  }
+  function startAutoSpin(){
+    if(!adminUser||currentUser?.id!==adminUser.id){notify("Автокликер доступен только администратору");return;}
+    if(autoSpinTimer!==null)return;
+    if(state.balance<COST){notify("Недостаточно средств для запуска автокликера");return;}
+    autoSpinCount=0;
+    $("auto-spin-start").disabled=true;$("auto-spin-stop").disabled=false;
+    $("auto-spin-status").textContent="Автокликер работает: проверка каждые 1 мс. Баланс: "+money(state.balance);
+    autoSpinTimer=setInterval(()=>{
+      if(!adminUser||currentUser?.id!==adminUser.id){stopAutoSpin("Доступ администратора потерян.");return;}
+      if(state.balance<COST){stopAutoSpin("Деньги закончились.");return;}
+      if(!$("spin-button").disabled){autoSpinCount++;spin();}
+    },1);
+  }
   let caseOpening=false;
   function casePreview(){
     const typeSelect=$("plate-type"),regionSelect=$("plate-region-select");
@@ -661,6 +683,7 @@
         setTimeout(()=>loadPlayer(session.user),0);
       }
       if(event==="SIGNED_OUT"){
+        stopAutoSpin("Сессия завершена.");
         currentUser=null;adminUser=null;playerReady=false;loadingUserId=null;
         $("profile-modal").hidden=true;$("settings-modal").hidden=true;
         $("admin-secret").hidden=true;$("admin-panel").hidden=true;$("admin-content").hidden=true;
@@ -728,7 +751,7 @@
   }
   function selectAdminTab(tab){
     document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.toggle("active",b.dataset.adminTab===tab));
-    ["players","odds","money","forced"].forEach(name=>$("admin-"+name).hidden=name!==tab);
+    ["players","odds","money","forced","autoclick"].forEach(name=>$("admin-"+name).hidden=name!==tab);
     if(tab==="players"||tab==="money")loadAdminPlayers();
   }
   function plural(n,forms){const n10=n%10,n100=n%100;return n100>=11&&n100<=14?forms[2]:n10===1?forms[0]:n10>=2&&n10<=4?forms[1]:forms[2];}
@@ -894,6 +917,7 @@
     if(error){localStorage.removeItem("nomgen-oauth-pending");$("auth-error").textContent="Ошибка входа: "+error.message;$("google-login").disabled=false;}
   });
   async function logoutAccount(){
+    stopAutoSpin("Выход из аккаунта.");
     if(isYandexGames){notify("Профиль Яндекс Игр управляется платформой");return;}
     if(currentUser&&supabase){
       const {error}=await supabase.auth.signOut();
@@ -1000,6 +1024,8 @@
     $("forced-status").textContent="Назначено: "+plate+" · регион "+region+" · выпадет на "+count+"-й попытке.";
     notify("Номер назначен выбранному игроку");
   });
+  $("auto-spin-start").addEventListener("click",startAutoSpin);
+  $("auto-spin-stop").addEventListener("click",()=>stopAutoSpin());
   $("forced-clear").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
     const userId=$("forced-player").value;
