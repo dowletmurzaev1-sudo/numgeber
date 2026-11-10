@@ -861,6 +861,13 @@
   });
   $("profile-logout").addEventListener("click",logoutAccount);
   $("spin-button").addEventListener("click",spin);
+  // На экране генератора можно запускать прокрутку нажатием почти в любое место.
+  $("machine").addEventListener("click",event=>{
+    if(event.target.closest("button,select,label,input,a"))return;
+    if(!$("spin-button").disabled)spin();
+  });
+  $("plate-wrap").addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();spin();}});
+
   $("save-player").addEventListener("click",async()=>{
     const name=$("player-name").value.trim().slice(0,20);
     if(!name){notify("Введи имя игрока");return;}
@@ -946,6 +953,10 @@
   $("menu-upgrades").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");$("upgrade-modal").hidden=false;renderUpgrades();});
   $("upgrade-close").addEventListener("click",()=>$("upgrade-modal").hidden=true);
   $("upgrade-modal").addEventListener("click",e=>{if(e.target===$("upgrade-modal"))$("upgrade-modal").hidden=true;});
+  $("menu-generator").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");window.scrollTo({top:0,behavior:"smooth"});});
+  $("menu-quests").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");$("daily-quests").scrollIntoView({behavior:"smooth",block:"start"});});
+  $("menu-leaders").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.remove("active");$("leaders-button").classList.add("active");$("leaderboard-panel").scrollIntoView({behavior:"smooth",block:"start"});});
+  $("menu-profile").addEventListener("click",()=>{$("menu-modal").hidden=true;$("menu-button").classList.remove("active");$("home-button").classList.add("active");$("profile-button").click();});
   $("home-button").addEventListener("click",()=>{document.querySelectorAll(".feature-modal").forEach(m=>m.hidden=true);$("menu-button").classList.remove("active");$("leaders-button").classList.remove("active");$("home-button").classList.add("active");window.scrollTo({top:0,behavior:"smooth"});});
   $("sort-select").addEventListener("change",render);
   $("reset-game").addEventListener("click",()=>{if(confirm("Сбросить весь прогресс? Баланс вернётся к 5 000 ₽, коллекция, история и улучшения будут удалены.")){state.balance=5000;state.collection=[];state.sales=[];state.spins=0;state.nextId=1;state.luckLevel=0;save();$("plate-main").textContent="А000АА";$("plate-region").textContent="77";$("rarity-label").textContent="ГОТОВ К РОЗЫГРЫШУ";$("result-value").textContent="Твоя следующая находка?";$("result-hint").textContent="Нажми кнопку, чтобы запустить генератор";$("result-info").className="result-info";render();notify("Прогресс сброшен");}});
