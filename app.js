@@ -461,6 +461,25 @@
     if(regionSelect)regionSelect.value=previousRegion;
     return item;
   }
+  let pendingCaseRewards=[];
+  function resolveCaseReward(index,action){
+    const item=pendingCaseRewards[index];
+    if(!item||item.resolved)return;
+    item.resolved=true;
+    if(action==="claim"){
+      item.id=state.nextId++;
+      state.collection.unshift(item);
+      if(item.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}
+      notify("Номер добавлен в коллекцию");
+    }else{
+      state.balance+=item.value;
+      state.sales.unshift({plate:item.plate,region:item.region,tier:item.tier,value:item.value,date:Date.now()});
+      notify("Продано за "+money(item.value));
+    }
+    save();render();
+    const card=document.querySelector('[data-case-reward="'+index+'"]');
+    if(card){card.classList.add("case-result-done");card.querySelector(".case-result-actions").innerHTML=action==="claim"?"<span>Забран в коллекцию</span>":"<span>Продан</span>";}
+  }
   async function openCases(count){
     if(caseOpening)return;
     const cost=250000*count;
@@ -470,36 +489,32 @@
     try{
       state.balance-=cost;save();render();
       $("case-results").innerHTML="";
-      const area=$("case-roulette-area");
-      area.innerHTML="";
-      const winners=[];
+      $("case-roulette-area").innerHTML="";
+      pendingCaseRewards=[];
       for(let n=0;n<count;n++){
         const winner=casePreview();
         const winnerIndex=44;
-        const slots=Array.from({length:56},(_,i)=>i===winnerIndex?winner:casePreview());
+        const slots=Array.from({length:56},()=>casePreview());
+        slots[winnerIndex]=winner;
         const track=document.createElement("div");track.className="case-track";
-        track.innerHTML=slots.map((x,i)=>'<div class="case-slot '+(i===winnerIndex?'winner':'')+'"><span>'+escapeHtml(x.plate)+'</span><small>'+escapeHtml(x.region)+' · '+escapeHtml(x.tier)+'</small></div>').join("");
-        const wrap=document.createElement("div");wrap.className="case-roulette";wrap.innerHTML='<div class="case-pointer"></div>';wrap.appendChild(track);area.appendChild(wrap);
-        track.style.transition="none";track.style.transform="translateX(0)";
+        track.innerHTML=slots.map(x=>'<div class="case-slot"><span>'+escapeHtml(x.plate)+'</span><small>'+escapeHtml(x.region)+' · '+escapeHtml(x.tier)+'</small></div>').join("");
+        const wrap=document.createElement("div");wrap.className="case-roulette";wrap.innerHTML='<div class="case-pointer"></div>';wrap.appendChild(track);$("case-roulette-area").appendChild(wrap);
+        track.style.transition="none";track.style.transform="translate3d(0,0,0)";
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         const winningSlot=track.children[winnerIndex];
-        const slotRect=winningSlot.getBoundingClientRect();
-        const wrapRect=wrap.getBoundingClientRect();
-        const currentOffset=slotRect.left-wrapRect.left;
-        const centeredOffset=currentOffset+(slotRect.width/2)-(wrapRect.width/2);
-        const maxOffset=Math.max(0,track.scrollWidth-wrap.clientWidth);
-        const offset=Math.min(centeredOffset,maxOffset);
+        const slotRect=winningSlot.getBoundingClientRect(),wrapRect=wrap.getBoundingClientRect();
+        const offset=(slotRect.left-wrapRect.left)+(slotRect.width/2)-(wrapRect.width/2);
         track.style.transition="transform "+(count===1?5.2:3.2)+"s cubic-bezier(.08,.72,.08,1)";
-        track.style.transform="translate3d(-"+offset+"px,0,0)";
+        track.style.transform="translate3d(-"+Math.max(0,offset)+"px,0,0)";
         await new Promise(resolve=>setTimeout(resolve,count===1?5350:3350));
-        winner.id=state.nextId++;state.collection.unshift(winner);winners.push(winner);
-        if(winner.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}
-        const result=document.createElement("div");result.className="case-result";
-        result.innerHTML='<span>'+escapeHtml(winner.plate)+' · '+escapeHtml(winner.region)+' · '+escapeHtml(winner.tier)+'</span><strong>'+money(winner.value)+'</strong>';
+        const rewardIndex=pendingCaseRewards.push({...winner,resolved:false})-1;
+        const result=document.createElement("div");result.className="case-result";result.dataset.caseReward=rewardIndex;
+        result.innerHTML='<span class="case-result-info">'+escapeHtml(winner.plate)+' · '+escapeHtml(winner.region)+' · '+escapeHtml(winner.tier)+'<strong>'+money(winner.value)+'</strong></span><div class="case-result-actions"><button type="button" class="case-reward-button claim" data-reward-action="claim">Забрать</button><button type="button" class="case-reward-button sell" data-reward-action="sell">Продать</button></div>';
         $("case-results").appendChild(result);
-        save();render();
+        result.querySelector('[data-reward-action="claim"]').addEventListener("click",()=>resolveCaseReward(rewardIndex,"claim"));
+        result.querySelector('[data-reward-action="sell"]').addEventListener("click",()=>resolveCaseReward(rewardIndex,"sell"));
       }
-      notify(count===1?"Кейс открыт! "+winners[0].plate:"Открыто 5 кейсов!");
+      notify(count===1?"Прокрутка завершена! Выбери действие.":"Все 5 прокруток завершены! Забери или продай номера.");
     }catch(error){
       console.error("Case opening error:",error);
       notify("Не удалось открыть кейс. Попробуй ещё раз.");
