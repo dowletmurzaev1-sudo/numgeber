@@ -1104,12 +1104,20 @@
     weights=Array.isArray(data)?normalizeWeights(data):[...DEFAULT_WEIGHTS];renderOdds();
   });
   $("apply-odds").addEventListener("click",async()=>{
-    if(!supabase||!adminUser){notify("Войди как администратор");return;}
-    const next=Array.from(document.querySelectorAll("[data-odds]"),el=>Math.max(0,Number(el.value)||0));
-    if(next.every(x=>x===0)){notify("Хотя бы один вес должен быть больше нуля");return;}
-    const {error}=await supabase.rpc("admin_set_player_weights",{target_user_id:$("odds-player").value,new_weights:next});
-    if(error){notify("Не удалось сохранить: "+error.message);return;}
-    weights=next;renderOdds();$("odds-status").textContent="Персональные шансы игрока сохранены.";notify("Шансы игрока обновлены");
+    const status=$("player-odds-status");
+    if(!supabase||!adminUser){status.textContent="Сначала войди как администратор.";notify("Войди как администратор");return;}
+    const userId=$("odds-player").value;
+    if(!userId){status.textContent="Сначала выбери игрока.";notify("Выбери игрока");return;}
+    const fields=Array.from(document.querySelectorAll("[data-odds]"));
+    const next=fields.map(el=>Number(el.value));
+    if(next.length!==5||next.some(x=>!Number.isFinite(x)||x<0)||next.every(x=>x===0)){
+      status.textContent="Укажи 5 неотрицательных весов. Хотя бы один должен быть больше нуля.";
+      notify("Проверь значения шансов");return;
+    }
+    status.textContent="Сохранение…";
+    const {error}=await supabase.rpc("admin_set_player_weights",{target_user_id:userId,new_weights:next});
+    if(error){status.textContent="Не удалось сохранить: "+error.message;notify("Не удалось сохранить шансы");return;}
+    weights=next;renderOdds();status.textContent="Шансы выбранного игрока успешно сохранены.";notify("Шансы игрока обновлены");
   });
   $("reset-odds").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
