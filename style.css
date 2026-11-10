@@ -312,3 +312,14 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 .case-slot span{max-width:100%;white-space:nowrap;font-size:clamp(12px,3.5vw,15px)}
 .case-slot small{white-space:nowrap}
 .case-pointer{pointer-events:none}
+
+/* No winner highlighting: all roulette slots have identical appearance */
+.case-slot.winner{border-color:#ffffff22!important;background:linear-gradient(145deg,#303747,#151a25)!important;box-shadow:none!important}
+.case-result{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.case-result-info{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.case-result-info strong{color:#f4d16d;white-space:nowrap}
+.case-result-actions{display:flex;gap:8px}
+.case-reward-button{flex:1;padding:11px 9px;border:1px solid #ffffff22;border-radius:8px;background:#252c3b;color:#fff;font:800 12px Manrope,sans-serif;cursor:pointer}
+.case-reward-button.claim{border-color:#4d91ff88;background:linear-gradient(145deg,#174d92,#18345a)}
+.case-reward-button.sell{border-color:#e6b94f88;background:linear-gradient(145deg,#63471a,#332613);color:#ffe1a0}
+.case-result-done .case-result-actions{color:#aab4c4;font-size:11px}
