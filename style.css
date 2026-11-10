@@ -353,3 +353,17 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 }
 
 .license-plate[data-country="belarus"] .plate-region-big,.license-plate[data-country="ukraine"] .plate-region-big{display:none}
+
+/* Admin-only auto-clicker widget on the generator screen */
+.admin-autoclick-widget{width:min(100%,430px);margin:14px auto 2px;padding:12px;border:1px solid #d6a74666;border-radius:13px;background:linear-gradient(145deg,#211d1aee,#101722ee);box-shadow:0 8px 24px #0005;color:#f5e8d2;text-align:left}
+.admin-autoclick-widget[hidden]{display:none!important}
+.admin-autoclick-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;font-size:12px}
+.admin-autoclick-title span{padding:3px 7px;border-radius:6px;background:#493719;color:#f4d16d;font-size:9px;font-weight:900;letter-spacing:1px}
+.admin-autoclick-widget label{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#b8c2d3;font-size:11px}
+.admin-autoclick-widget select{max-width:190px;padding:7px 10px;border:1px solid #ffffff22;border-radius:8px;background:#202a3b;color:#fff;font:700 11px Manrope,sans-serif}
+.admin-autoclick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.admin-autoclick-actions button{min-height:38px;border:1px solid #d7ae5d66;border-radius:8px;background:linear-gradient(145deg,#4b381b,#292016);color:#ffe2a0;font:800 11px Manrope,sans-serif}
+.admin-autoclick-actions button:first-child{background:linear-gradient(145deg,#1d5c3c,#123322);border-color:#4fc58a66;color:#d2ffe3}
+.admin-autoclick-actions button:disabled{opacity:.45}
+.admin-autoclick-widget>small{display:block;margin-top:9px;color:#aeb8c8;font-size:9px;line-height:1.45}
+@media(max-width:600px){.admin-autoclick-widget{width:100%;margin:10px auto 0;padding:10px}.admin-autoclick-title{font-size:11px}}
