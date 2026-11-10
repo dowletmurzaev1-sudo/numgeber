@@ -498,6 +498,7 @@
     const start=$("auto-spin-start-screen"),stop=$("auto-spin-stop-screen");
     if(start)start.disabled=false;
     if(stop)stop.disabled=true;
+    const adminStart=$("admin-autoclick-start"),adminStop=$("admin-autoclick-stop");if(adminStart)adminStart.disabled=false;if(adminStop)adminStop.disabled=true;
     setAutoSpinStatus(message);
   }
   async function runAutoSpin(){
@@ -521,6 +522,7 @@
     const start=$("auto-spin-start-screen"),stop=$("auto-spin-stop-screen");
     if(start)start.disabled=true;
     if(stop)stop.disabled=false;
+    const adminStart=$("admin-autoclick-start"),adminStop=$("admin-autoclick-stop");if(adminStart)adminStart.disabled=true;if(adminStop)adminStop.disabled=false;
     setAutoSpinStatus("Автокликер включён. Скорость: "+autoSpinTickMs+" мс на шаг анимации.");
     autoSpinTimer=setTimeout(runAutoSpin,1);
   }
@@ -1093,17 +1095,27 @@
     $("forced-status").textContent="Назначено: "+plate+" · регион "+region+" · выпадет на "+count+"-й попытке.";
     notify("Номер назначен выбранному игроку");
   });
-  $("admin-autoclick-add").addEventListener("click",()=>{
+  $("admin-autoclick-start").addEventListener("click",()=>{
     if(!adminUser){notify("Войди как администратор");return;}
-    const add=confirm("Добавить панель автокликера на экран генератора?\n\nОК — Да, добавить.\nОтмена — Нет, оставить скрытой.");
-    if(add){localStorage.setItem("nomgen-admin-autoclick-visible","1");renderAutoClickerWidget();notify("Панель автокликера добавлена на экран генератора");}
-    else{localStorage.removeItem("nomgen-admin-autoclick-visible");stopAutoSpin("Панель автокликера скрыта.");renderAutoClickerWidget();notify("Панель автокликера не добавлена");}
+    localStorage.setItem("nomgen-admin-autoclick-visible","1");
+    const adminSpeed=$("admin-auto-spin-speed");
+    if(adminSpeed){autoSpinTickMs=Math.max(20,Math.min(150,Number(adminSpeed.value)||60));localStorage.setItem("nomgen-auto-spin-speed",String(autoSpinTickMs));}
+    renderAutoClickerWidget();
+    startAutoSpin();
+  });
+  $("admin-autoclick-stop").addEventListener("click",()=>stopAutoSpin());
+  $("admin-auto-spin-speed").addEventListener("change",()=>{
+    autoSpinTickMs=Math.max(20,Math.min(150,Number($("admin-auto-spin-speed").value)||60));
+    localStorage.setItem("nomgen-auto-spin-speed",String(autoSpinTickMs));
+    const screen=$("auto-spin-speed");if(screen)screen.value=String(autoSpinTickMs);
+    if(autoSpinRunning)setAutoSpinStatus("Автокликер включён. Новая скорость: "+autoSpinTickMs+" мс на шаг анимации.");
   });
   $("auto-spin-start-screen").addEventListener("click",startAutoSpin);
   $("auto-spin-stop-screen").addEventListener("click",()=>stopAutoSpin());
   $("auto-spin-speed").addEventListener("change",()=>{
     autoSpinTickMs=Math.max(20,Math.min(150,Number($("auto-spin-speed").value)||60));
     localStorage.setItem("nomgen-auto-spin-speed",String(autoSpinTickMs));
+    const adminSpeed=$("admin-auto-spin-speed");if(adminSpeed)adminSpeed.value=String(autoSpinTickMs);
     if(autoSpinRunning)setAutoSpinStatus("Автокликер включён. Новая скорость: "+autoSpinTickMs+" мс на шаг анимации.");
   });
   $("forced-clear").addEventListener("click",async()=>{
