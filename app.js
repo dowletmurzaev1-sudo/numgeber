@@ -22,6 +22,9 @@
   let playerName = localStorage.getItem("nomgen-player-name") || "Игрок";
   let avatarData = localStorage.getItem("nomgen-avatar") || "";
   const letters = ["А","В","Е","К","М","Н","О","Р","С","Т","У","Х"];
+  const countryLetters=["A","B","C","E","H","K","M","O","P","T","X","Y"];
+  let selectedCountry=localStorage.getItem("nomgen-country")||"ru";
+  const uaRegions=["AA","KA","AB","AC","AE","AH","AI","AK","AM","AO","AP","AT","AX","BA","BB","BC","BE","BH","BI","BK","BM","BO","BT","BX","CA","CB","CE","CH","IA","IB","IC","II"];
   const regions = ["01","101","02","102","702","03","103","04","05","105","06","07","08","09","109","10","11","111","12","13","113","14","15","115","16","116","716","17","18","118","19","21","121","22","122","222","23","93","123","193","323","24","84","88","124","224","25","125","725","26","126","27","28","29","30","130","31","131","32","33","133","34","134","35","36","136","37","38","85","138","39","91","139","40","41","42","142","43","44","45","46","47","147","48","49","50","90","150","190","250","550","750","790","51","52","152","252","53","54","154","754","55","155","56","156","57","58","158","59","159","60","61","161","761","62","63","163","763","64","164","65","66","96","196","67","68","69","169","70","71","72","172","73","173","74","174","774","75","76","176","77","97","99","177","197","199","277","299","777","797","799","977","997","78","98","178","198","778","79","80","180","81","181","82","182","83","84","184","85","185","86","186","87","89","92","192","94","95"];
   const tiers = [
     {name:"Обычный",key:"common",weight:69.5,min:100,max:10000,color:"#aeb8c4"},
@@ -287,37 +290,36 @@
     return tiers[0];
   }
   function selectedPlateType(){
+    if(selectedCountry!=="ru")return selectedCountry;
     const chosen=$("plate-type")?.value||"all";
     if(chosen!=="all")return chosen;
     const pool=["civil","civil","civil","taxi","police","military","belarus"];
     return pool[Math.floor(Math.random()*pool.length)];
   }
   function selectedRegion(type){
+    if(type==="kazakhstan")return String(1+Math.floor(Math.random()*20)).padStart(2,"0");
+    if(type==="ukraine")return uaRegions[Math.floor(Math.random()*uaRegions.length)];
+    if(type==="belarus")return String(1+Math.floor(Math.random()*7));
     const chosen=$("plate-region-select")?.value||"random";
     if(chosen!=="random"&&chosen!==" Беларусь")return chosen;
     if(type==="belarus")return "BY";
     return regions[Math.floor(Math.random()*regions.length)].trim();
   }
   function makeNumber(){
-    const targetTier=chooseTier();
-    const type=selectedPlateType(), region=selectedRegion(type);
+    const targetTier=chooseTier(),type=selectedPlateType(),region=selectedRegion(type);
     let digits,chars,plate;
-    if(type==="police"){
-      digits=String(1000+Math.floor(Math.random()*9000));
-      chars=letters[Math.floor(Math.random()*letters.length)];
-      plate=chars+" "+digits;
+    if(type==="belarus"){
+      digits=String(1000+Math.floor(Math.random()*9000));chars=Array.from({length:2},()=>countryLetters[Math.floor(Math.random()*countryLetters.length)]).join("");plate=digits+" "+chars+"-"+region;
+    }else if(type==="kazakhstan"){
+      digits=String(1000+Math.floor(Math.random()*9000));chars=Array.from({length:3},()=>countryLetters[Math.floor(Math.random()*countryLetters.length)]).join("");plate=digits+" "+chars+" "+region;
+    }else if(type==="ukraine"){
+      digits=String(1000+Math.floor(Math.random()*9000));const prefix=region;chars=Array.from({length:2},()=>countryLetters[Math.floor(Math.random()*countryLetters.length)]).join("");plate=prefix+" "+digits+" "+chars;chars=prefix+chars;
+    }else if(type==="police"){
+      digits=String(1000+Math.floor(Math.random()*9000));chars=letters[Math.floor(Math.random()*letters.length)];plate=chars+" "+digits;
     }else if(type==="military"){
-      digits=String(1000+Math.floor(Math.random()*9000));
-      chars=Array.from({length:2},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
-      plate=digits+" "+chars+" "+region;
-    }else if(type==="belarus"){
-      digits=String(1000+Math.floor(Math.random()*9000));
-      chars=Array.from({length:2},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
-      plate=digits+" "+chars+"-"+(1+Math.floor(Math.random()*7));
+      digits=String(1000+Math.floor(Math.random()*9000));chars=Array.from({length:2},()=>letters[Math.floor(Math.random()*letters.length)]).join("");plate=digits+" "+chars+" "+region;
     }else{
-      digits=String(1+Math.floor(Math.random()*999)).padStart(3,"0");
-      chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]).join("");
-      plate=chars[0]+digits+chars.slice(1);
+      digits=String(1+Math.floor(Math.random()*999)).padStart(3,"0");chars=Array.from({length:3},()=>letters[Math.floor(Math.random()*letters.length)]).join("");plate=chars[0]+digits+chars.slice(1);
     }
     if(targetTier.key!=="common"){
       const premium=["777","888","999","555","111","222","333"];
@@ -326,22 +328,24 @@
         if(targetTier.key==="epic"){digits=premium[Math.floor(Math.random()*premium.length)];chars=chars[0]+chars[0]+chars[2];}
         if(targetTier.key==="mythic"){digits=premium[Math.floor(Math.random()*premium.length)];const l=letters[Math.floor(Math.random()*letters.length)];chars=l+l+l;}
         if(targetTier.key==="legendary"){digits=["777","888","999"][Math.floor(Math.random()*3)];const l=letters[Math.floor(Math.random()*letters.length)];chars=l+l+l;}
+        plate=chars[0]+digits+chars.slice(1);
       }else{
         digits=targetTier.key==="rare"?"1001":targetTier.key==="epic"?"7777":targetTier.key==="mythic"?"8888":"9999";
         if(type==="police")chars=letters[Math.floor(Math.random()*letters.length)];
-        else chars=chars[0]+chars[0];
+        else if(type==="military"||type==="belarus")chars=chars[0]+chars[0];
+        else if(type==="kazakhstan")chars=targetTier.key==="legendary"?"AAA":targetTier.key==="mythic"?"BBB":targetTier.key==="epic"?"CCC":chars[0]+chars[0]+chars[2];
+        else if(type==="ukraine")chars=region+(targetTier.key==="legendary"?"AA":targetTier.key==="mythic"?"BB":targetTier.key==="epic"?"CC":chars.slice(-2));
+        if(type==="police")plate=chars+" "+digits;
+        else if(type==="military")plate=digits+" "+chars+" "+region;
+        else if(type==="belarus")plate=digits+" "+chars+"-"+region;
+        else if(type==="kazakhstan")plate=digits+" "+chars+" "+region;
+        else if(type==="ukraine")plate=region+" "+digits+" "+chars.slice(-2);
       }
-      if(type==="civil"||type==="taxi")plate=chars[0]+digits+chars.slice(1);
-      else if(type==="police")plate=chars+" "+digits;
-      else if(type==="military")plate=digits+" "+chars+" "+region;
-      else plate=digits+" "+chars+"-"+(1+Math.floor(Math.random()*7));
     }
-    const pattern=patternDetails(digits,chars,region);
-    const rawValue=plateValue(digits,chars,region,pattern,type);
-    const value=targetTier.key==="common"?rawValue:Math.round((targetTier.min+Math.random()*(targetTier.max-targetTier.min))/50)*50;
-    const tier=tierForValue(value);
-    const labels={civil:"Гражданский РФ",police:"Полицейский",taxi:"Такси",military:"Военный",belarus:"Беларусь"};
-    return {id:state.nextId++,digits,chars,region,plate,type,typeLabel:labels[type],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(digits,chars,region,pattern,type),favorite:false};
+    const pattern=patternDetails(digits,chars,region),rawValue=plateValue(digits,chars,region,pattern,type);
+    const value=targetTier.key==="common"?rawValue:Math.round((targetTier.min+Math.random()*(targetTier.max-targetTier.min))/50)*50,tier=tierForValue(value);
+    const labels={civil:"Гражданский РФ",police:"Полицейский",taxi:"Такси",military:"Военный",belarus:"Беларусь",kazakhstan:"Казахстан",ukraine:"Украина"};
+    return {id:state.nextId++,digits,chars,region,plate,type,country:["civil","police","taxi","military"].includes(type)?"ru":type,typeLabel:labels[type],tier:tier.name,key:tier.key,color:tier.color,value,created:Date.now(),pattern:pattern.label,reason:numberReason(digits,chars,region,pattern,type),favorite:false};
   }
   function showWinAnimation(item){
     // Эффект награды показываем только для мифических и легендарных номеров.
@@ -446,7 +450,7 @@
         machine.classList.remove("spinning");
         if(item.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}
         state.collection.unshift(item);save();
-        $("plate-main").textContent=item.plate;$("plate-region").textContent=item.type==="belarus"?"BY":item.region;$("license-plate").dataset.type=item.type||"civil";
+        $("plate-main").textContent=item.plate;$("plate-region").textContent=item.region;$("license-plate").dataset.type=item.type||"civil";$("license-plate").dataset.country=item.country||"ru";$("plate-rus").textContent=item.country==="belarus"?"BY":item.country==="kazakhstan"?"KZ":item.country==="ukraine"?"UA":"RUS";
         const info=$("result-info");info.className="result-info rarity-"+item.key;
         $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=(item.typeLabel?item.typeLabel+" · ":"")+(item.reason||"Номер добавлен в твою коллекцию");
         machine.classList.add("win-flash");setTimeout(()=>machine.classList.remove("win-flash"),700);
@@ -980,6 +984,21 @@
     }finally{button.disabled=false;}
   });
   $("profile-logout").addEventListener("click",logoutAccount);
+  function updateCountryDisplay(){
+    const country=selectedCountry;
+    document.querySelectorAll("[data-country-choice]").forEach(el=>{el.classList.toggle("active",el.dataset.countryChoice===country);el.setAttribute("aria-pressed",String(el.dataset.countryChoice===country));});
+    $("plate-type").disabled=country!=="ru";$("plate-region-select").disabled=country!=="ru";
+    $("license-plate").dataset.country=country;
+    $("license-plate").dataset.type="civil";
+    $("plate-main").textContent=country==="kazakhstan"?"123 ABC":country==="ukraine"?"AA 1234 BB":country==="belarus"?"1234 AB":"А000АА";
+    $("plate-region").textContent=country==="kazakhstan"?"01":country==="ukraine"?"UA":country==="belarus"?"7":"77";
+    $("plate-rus").textContent=country==="kazakhstan"?"KZ":country==="ukraine"?"UA":country==="belarus"?"BY":"RUS";
+    $("machine-country-label").textContent=({ru:"ГОСЗНАК • РОССИЯ",belarus:"ГОСЗНАК • БЕЛАРУСЬ",kazakhstan:"ГОСЗНАК • КАЗАХСТАН",ukraine:"ГОСЗНАК • УКРАИНА"})[country];
+  }
+  document.querySelectorAll("[data-country-choice]").forEach(button=>button.addEventListener("click",()=>{
+    selectedCountry=button.dataset.countryChoice;localStorage.setItem("nomgen-country",selectedCountry);$("plate-region-select").value="random";updateCountryDisplay();
+  }));
+  updateCountryDisplay();
   $("spin-button").addEventListener("click",spin);
   // На экране генератора можно запускать прокрутку нажатием почти в любое место.
   document.querySelector(".machine").addEventListener("click",event=>{
