@@ -334,8 +334,8 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 .license-plate[data-country="belarus"],.license-plate[data-country="kazakhstan"],.license-plate[data-country="ukraine"]{position:relative;overflow:hidden}
 .license-plate[data-country="belarus"]::before,.license-plate[data-country="kazakhstan"]::before,.license-plate[data-country="ukraine"]::before{content:"";position:absolute;z-index:1;left:0;top:0;bottom:0;width:13px;border-right:1px solid #aeb5bd}
 .license-plate[data-country="belarus"]::before{background:linear-gradient(to bottom,#d71920 0 34%,#fff 34% 42%,#168b45 42% 100%)}
-.license-plate[data-country="kazakhstan"]::before{background:linear-gradient(to right,#00a3dd 0 50%,#f5d547 50% 100%)}
-.license-plate[data-country="ukraine"]::before{background:linear-gradient(to right,#0057b8 0 50%,#ffd700 50% 100%)}
+.license-plate[data-country="kazakhstan"]::before{background:#00a3dd;background-image:radial-gradient(circle at 50% 42%,#f5d547 0 3px,transparent 3.5px),linear-gradient(90deg,transparent 45%,#f5d547 46% 54%,transparent 55%)}
+.license-plate[data-country="ukraine"]::before{background:linear-gradient(to bottom,#0057b8 0 50%,#ffd700 50% 100%)}
 .license-plate[data-country="belarus"] .plate-main,.license-plate[data-country="kazakhstan"] .plate-main,.license-plate[data-country="ukraine"] .plate-main{font-size:clamp(24px,4.5vw,40px);letter-spacing:1px;padding-left:12px}
 .license-plate[data-country="ukraine"] .plate-main{font-size:clamp(21px,4vw,35px)}
 .license-plate[data-country="belarus"] .plate-rus,.license-plate[data-country="kazakhstan"] .plate-rus,.license-plate[data-country="ukraine"] .plate-rus{display:grid;place-items:center;width:48px;min-width:48px;font-size:13px;font-weight:900;letter-spacing:0;border-left:2px solid #b9bec4;color:#17202a}
