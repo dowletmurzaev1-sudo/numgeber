@@ -198,3 +198,207 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
  .stat-cards{gap:6px}.mini-stat span{font-size:8px}.mini-stat strong{font-size:14px}.mini-stat small{font-size:8px}
  .daily-quest{padding:10px}.feature-card{padding:17px}
 }
+
+
+/* NomGen video-style skin */
+:root{
+  --bg:#050307;
+  --panel:#0b0810;
+  --panel2:#120d18;
+  --line:#21182b;
+  --muted:#a39aac;
+  --text:#f5f1f8;
+  --lime:#8cff9b;
+  --lime2:#53d96b;
+  --gold:#ffd86b;
+}
+body{
+  background:
+    radial-gradient(ellipse at 50% 36%,rgba(112,35,160,.20),transparent 42%),
+    radial-gradient(ellipse at 50% 70%,rgba(20,120,65,.12),transparent 38%),
+    #050307;
+  color:#f7f2fa;
+}
+body:before{
+  content:"";
+  position:fixed;inset:0;pointer-events:none;z-index:-2;
+  background:linear-gradient(180deg,#050307 0%,#09050e 42%,#040206 100%);
+}
+.topbar{
+  height:64px;
+  background:#050307e8;
+  border-bottom:1px solid #17101e;
+  box-shadow:0 8px 30px #0008;
+}
+.brand-mark{
+  background:linear-gradient(145deg,#d7b4ff,#8f4cff);
+  color:#12091b;
+  box-shadow:0 0 25px #8e4dff45;
+}
+.brand small{color:#786a82}
+.stat-icon,.profile-button{background:#0d0911;border-color:#281b32}
+.stat strong{color:#fff}
+.shell{max-width:940px}
+.hero{
+  min-height:210px;
+  padding:24px 10px 18px;
+}
+.hero-copy{max-width:560px}
+.eyebrow{color:#b978ff}
+.live-dot{background:#b978ff;box-shadow:0 0 14px #b978ff}
+h1{font-size:clamp(32px,5vw,55px);margin:10px 0}
+h1 span{color:#b978ff}
+.hero-copy p{color:#a99faf}
+.hero-tags span{
+  background:#0d0811;
+  border-color:#2b1b35;
+  color:#988da2;
+}
+.hero-art{opacity:.42}
+.hero-logo{filter:drop-shadow(0 0 24px #9a4cff55)}
+
+.game-grid{grid-template-columns:1fr;max-width:680px;margin:0 auto 16px}
+.panel{
+  background:linear-gradient(180deg,#100b14,#09070c);
+  border:1px solid #211629;
+  border-radius:16px;
+  box-shadow:0 18px 60px #000b;
+}
+.generator-panel{padding:10px}
+.generator-panel>.panel-heading{display:none}
+.machine{
+  background:
+    radial-gradient(ellipse at 50% 42%,#25152f 0%,#100a15 42%,#07050a 76%);
+  border:0;
+  border-radius:12px;
+  padding:16px 10px 14px;
+  min-height:470px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.machine-top{color:#72677b}
+.machine-lights i{background:#3a3040}
+.machine-lights i:first-child{background:#8c52ff;box-shadow:0 0 10px #8c52ff}
+.generator-options{opacity:.75}
+.plate-wrap{padding:28px 0 18px}
+.license-plate{
+  width:min(100%,500px);
+  height:96px;
+  border:4px solid #c8cbd0;
+  border-radius:4px;
+  box-shadow:0 7px 0 #737a82,0 18px 35px #0009,inset 0 0 0 1px #fff;
+}
+.plate-main{font-size:clamp(35px,7vw,58px);letter-spacing:3px}
+.plate-region-big{font-size:24px}
+.plate-rus{font-size:9px}
+.result-info{
+  position:relative;
+  min-height:78px;
+  padding:12px 14px;
+  margin:0 auto;
+  width:min(100%,500px);
+  border-radius:12px;
+  background:linear-gradient(180deg,#17131a,#0e0a11);
+  border:1px solid #302539;
+  box-shadow:0 0 35px #0008;
+  text-align:left;
+}
+.rarity-label{font-size:11px;letter-spacing:1px;color:#b979ff}
+.result-info strong{
+  color:#bb7cff;
+  font:700 20px Manrope,sans-serif;
+  text-align:right;
+  margin-top:-18px;
+}
+.result-info small{color:#9a90a2}
+.spin-button{
+  width:min(100%,500px);
+  background:linear-gradient(180deg,#8b48ff,#6b2bd1);
+  color:#fff;
+  box-shadow:0 4px 0 #3d197a,0 0 28px #7b35e955;
+  border-radius:9px;
+  margin-top:14px;
+}
+.spin-button:hover{background:linear-gradient(180deg,#9b5aff,#7835df)}
+.odds-note{color:#6f6478}
+
+.rarity-common .rarity-label{color:#73e78b}
+.rarity-rare .rarity-label{color:#56a8ff}
+.rarity-epic .rarity-label{color:#a96cff}
+.rarity-mythic .rarity-label{color:#c77cff}
+.rarity-legendary .rarity-label{color:#ffd75e}
+.rarity-common .result-info{box-shadow:0 0 38px #38d96520}
+.rarity-rare .result-info{box-shadow:0 0 38px #3f9dff25}
+.rarity-epic .result-info{box-shadow:0 0 45px #9d55ff35}
+.rarity-mythic .result-info{box-shadow:0 0 55px #c45aff42}
+.rarity-legendary .result-info{box-shadow:0 0 70px #ffd24d55}
+.rarity-common .result-info strong{color:#73e78b}
+.rarity-rare .result-info strong{color:#56a8ff}
+.rarity-epic .result-info strong{color:#b679ff}
+.rarity-mythic .result-info strong{color:#d47cff}
+.rarity-legendary .result-info strong{color:#ffd75e}
+
+.stats-panel,.daily-quests-panel,.history-panel,.leaderboard-panel{display:none}
+.bottom-nav{
+  position:fixed;
+  left:50%;bottom:10px;transform:translateX(-50%);
+  z-index:80;
+  width:min(94%,420px);
+  height:58px;
+  padding:5px;
+  display:flex;
+  gap:5px;
+  background:#0b0810ed;
+  border:1px solid #2a1b33;
+  border-radius:16px;
+  box-shadow:0 12px 45px #000d,0 0 30px #8d45ff10;
+  backdrop-filter:blur(18px);
+}
+.bottom-nav-item{
+  flex:1;border:0;border-radius:11px;background:transparent;color:#766c80;
+  cursor:pointer;
+}
+.bottom-nav-item.active{
+  color:#b978ff;
+  background:#8c4cff15;
+  box-shadow:inset 0 0 20px #8c4cff10;
+}
+.nav-icon{font-size:20px;line-height:1}
+.nav-label{font-size:8px;letter-spacing:.8px;margin-top:2px}
+footer{display:none}
+.feature-modal,.profile-modal{background:#030205ee}
+.feature-card,.profile-card{
+  background:linear-gradient(180deg,#130d18,#09070c);
+  border-color:#33213e;
+}
+@media(max-width:760px){
+  .topbar{height:58px;padding:0 10px}
+  .brand{font-size:15px}
+  .brand-mark{width:31px;height:31px}
+  .top-stats{display:none}
+  .shell{padding:0 8px;padding-bottom:78px}
+  .hero{min-height:150px;padding:17px 7px 10px}
+  .hero-copy p{font-size:11px;line-height:1.45;max-width:360px}
+  .hero-tags{margin-top:12px}
+  .hero-tags span{padding:6px 7px;font-size:7px}
+  .hero-art{right:-130px;transform:scale(.65)}
+  .game-grid{margin-top:0}
+  .generator-panel{padding:5px}
+  .machine{min-height:520px;padding:12px 7px}
+  .generator-options{display:none}
+  .plate-wrap{padding:32px 0 20px}
+  .license-plate{height:82px}
+  .plate-main{font-size:34px}
+  .plate-region-big{font-size:18px}
+  .result-info{min-height:72px}
+  .result-info strong{font-size:17px}
+  .spin-button{padding:15px}
+}
+@media(max-width:430px){
+  .hero{min-height:125px}
+  .hero h1{font-size:30px}
+  .hero-copy p{display:none}
+  .hero-tags{margin-top:9px}
+  .machine{min-height:500px}
+}
