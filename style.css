@@ -377,3 +377,6 @@ body{padding-bottom:0!important}
 .admin-autoclick-widget input[type="number"],.autoclick-admin-card input[type="number"]{max-width:150px;padding:7px 10px;border:1px solid #ffffff22;border-radius:8px;background:#202a3b;color:#fff;font:700 11px Manrope,sans-serif;box-sizing:border-box}.admin-autoclick-widget label,.autoclick-admin-card .admin-field{display:flex;align-items:center;justify-content:space-between;gap:10px}
 
 .admin-player-odds-save{display:flex;flex-direction:column;gap:10px;margin-top:16px}.admin-player-odds-save #apply-odds{width:100%;min-height:52px;font-weight:800;letter-spacing:.3px}.admin-player-odds-save #reset-odds{width:100%;min-height:42px}.admin-player-odds-save+#player-odds-status{margin-top:10px}
+
+/* Show odds save actions only after a value is edited. */
+#apply-global-odds[hidden],#apply-odds[hidden]{display:none!important}
