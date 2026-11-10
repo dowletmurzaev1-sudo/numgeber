@@ -1,6 +1,9 @@
 (() => {
   "use strict";
-  const COST = 500;
+  const MIN_SPIN_COST = 700;
+  const MAX_SPIN_COST = 2000;
+  function randomSpinCost(){return MIN_SPIN_COST+Math.floor(Math.random()*((MAX_SPIN_COST-MIN_SPIN_COST)/50+1))*50;}
+  let currentSpinCost = randomSpinCost();
   const STORAGE_KEY = "nomgen-save-v1";
   const ODDS_KEY = "nomgen-odds-v1";
   const PLAYERS_KEY = "nomgen-players-v1";
@@ -19,7 +22,7 @@
   let yandexSaveQueue = Promise.resolve();
   let yandexFullscreenTimer = null;
   let adminUser = null;
-  let autoSpinTickMs = Math.max(20,Math.min(150,Number(localStorage.getItem("nomgen-auto-spin-speed"))||60));
+  let autoSpinTickMs = Math.max(1,Math.min(5000,Number(localStorage.getItem("nomgen-auto-spin-speed"))||60));
   let currentUser = null;
   let playerReady = false;
   let loadingUserId = null;
@@ -433,7 +436,7 @@
   let ignoreNextMachineClick=false;
   async function spin(){
     if($("spin-button").disabled)return false;
-    if(state.balance<COST){notify("Недостаточно средств для попытки");return false;}
+    if(state.balance<currentSpinCost){notify("Недостаточно средств: нужно "+money(currentSpinCost));return false;}
     const btn=$("spin-button");
     btn.disabled=true;btn.querySelector("span:nth-child(2)").textContent="ГЕНЕРАТОР ЗАПУЩЕН";
     let forcedNumber=null;
@@ -442,7 +445,7 @@
       if(error){btn.disabled=false;btn.querySelector("span:nth-child(2)").textContent="КРУТИТЬ ГЕНЕРАТОР";notify("Не удалось проверить настройку номера: "+error.message);return false;}
       forcedNumber=data;
     }
-    ensureDailyState();state.dailyQuests.spins++;state.balance-=COST;state.spins++;save();render();
+    ensureDailyState();state.dailyQuests.spins++;state.balance-=currentSpinCost;state.spins++;save();render();
     const machine=$("plate-wrap");
     machine.classList.add("spinning");
     $("rarity-label").textContent="ИДЁТ РОЗЫГРЫШ";$("result-value").textContent="Ищем красивую комбинацию…";$("result-hint").textContent="Удача уже где-то рядом";
@@ -456,7 +459,7 @@
         activeSpinSkip=null;
         machine.classList.remove("spinning");
         if(item.key!=="common"){ensureDailyState();state.dailyQuests.rareFinds++;}
-        state.collection.unshift(item);save();
+        state.collection.unshift(item);currentSpinCost=randomSpinCost();save();
         $("plate-main").textContent=item.plate;$("plate-region").textContent=item.region;$("license-plate").dataset.type=item.type||"civil";$("license-plate").dataset.country=item.country||"ru";$("plate-rus").textContent=item.country==="belarus"?"BY":item.country==="kazakhstan"?"KZ":item.country==="ukraine"?"UA":"RUS";
         const info=$("result-info");info.className="result-info rarity-"+item.key;
         $("rarity-label").textContent=item.tier.toUpperCase();$("result-value").textContent="Найдено! Оценка: "+money(item.value);$("result-hint").textContent=(item.typeLabel?item.typeLabel+" · ":"")+(item.reason||"Номер добавлен в твою коллекцию");
@@ -505,19 +508,19 @@
     autoSpinTimer=null;
     if(!autoSpinRunning)return;
     if(!adminUser){stopAutoSpin("Доступ администратора потерян.");return;}
-    if(state.balance<COST){stopAutoSpin("Деньги закончились.");return;}
+    if(state.balance<currentSpinCost){stopAutoSpin("Деньги закончились. Следующая прокрутка стоит "+money(currentSpinCost));return;}
     autoSpinCount++;
     const completed=await spin();
     if(!autoSpinRunning)return;
     if(!completed){stopAutoSpin("Автокликер остановлен: прокрутка не выполнена.");return;}
-    if(state.balance<COST){stopAutoSpin("Деньги закончились.");return;}
+    if(state.balance<currentSpinCost){stopAutoSpin("Деньги закончились. Следующая прокрутка стоит "+money(currentSpinCost));return;}
     autoSpinTimer=setTimeout(runAutoSpin,1);
   }
   function startAutoSpin(){
     if(!adminUser){notify("Автокликер доступен только администратору");return;}
     if(localStorage.getItem("nomgen-admin-autoclick-visible")!=="1"){notify("Сначала добавь автокликер на экран генератора в админ-панели");return;}
     if(autoSpinRunning)return;
-    if(state.balance<COST){notify("Недостаточно средств для запуска автокликера");return;}
+    if(state.balance<currentSpinCost){notify("Недостаточно средств: следующая прокрутка стоит "+money(currentSpinCost));return;}
     autoSpinCount=0;autoSpinRunning=true;
     const start=$("auto-spin-start-screen"),stop=$("auto-spin-stop-screen");
     if(start)start.disabled=true;
@@ -641,6 +644,9 @@
     $("buy-luck").disabled=luckLevel===5;
   }
   function render(){
+    const costText=money(currentSpinCost);
+    const pricePill=document.querySelector(".price-pill");if(pricePill)pricePill.textContent="−"+costText+" / попытка";
+    const spinPrice=$("spin-button")?.querySelector("b");if(spinPrice)spinPrice.textContent=costText;
     renderDailyQuests();
     $("balance").textContent=money(state.balance);$("collection-count").textContent=state.collection.length+" "+plural(state.collection.length,["номер","номера","номеров"]);
     $("collection-badge").textContent=state.collection.length;$("spins-count").textContent=state.spins;
@@ -1105,7 +1111,7 @@
   });
   $("admin-autoclick-stop").addEventListener("click",()=>stopAutoSpin());
   $("admin-auto-spin-speed").addEventListener("change",()=>{
-    autoSpinTickMs=Math.max(20,Math.min(150,Number($("admin-auto-spin-speed").value)||60));
+    autoSpinTickMs=Math.max(1,Math.min(5000,Number($("admin-auto-spin-speed").value)||60));
     localStorage.setItem("nomgen-auto-spin-speed",String(autoSpinTickMs));
     const screen=$("auto-spin-speed");if(screen)screen.value=String(autoSpinTickMs);
     if(autoSpinRunning)setAutoSpinStatus("Автокликер включён. Новая скорость: "+autoSpinTickMs+" мс на шаг анимации.");
@@ -1113,7 +1119,7 @@
   $("auto-spin-start-screen").addEventListener("click",()=>{if(!adminUser){notify("Войди как администратор");return;}localStorage.setItem("nomgen-admin-autoclick-visible","1");renderAutoClickerWidget();startAutoSpin();});
   $("auto-spin-stop-screen").addEventListener("click",()=>stopAutoSpin());
   $("auto-spin-speed").addEventListener("change",()=>{
-    autoSpinTickMs=Math.max(20,Math.min(150,Number($("auto-spin-speed").value)||60));
+    autoSpinTickMs=Math.max(1,Math.min(5000,Number($("auto-spin-speed").value)||60));
     localStorage.setItem("nomgen-auto-spin-speed",String(autoSpinTickMs));
     const adminSpeed=$("admin-auto-spin-speed");if(adminSpeed)adminSpeed.value=String(autoSpinTickMs);
     if(autoSpinRunning)setAutoSpinStatus("Автокликер включён. Новая скорость: "+autoSpinTickMs+" мс на шаг анимации.");
