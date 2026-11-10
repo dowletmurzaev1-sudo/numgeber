@@ -367,3 +367,7 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 .admin-autoclick-actions button:disabled{opacity:.45}
 .admin-autoclick-widget>small{display:block;margin-top:9px;color:#aeb8c8;font-size:9px;line-height:1.45}
 @media(max-width:600px){.admin-autoclick-widget{width:100%;margin:10px auto 0;padding:10px}.admin-autoclick-title{font-size:11px}}
+
+/* Hide the fixed bottom navigation bar on every screen size. */
+.bottom-nav{display:none!important}
+body{padding-bottom:0!important}
