@@ -451,7 +451,14 @@
   }
   let caseOpening=false;
   function casePreview(){
+    const typeSelect=$("plate-type"),regionSelect=$("plate-region-select");
+    const previousType=typeSelect?.value,previousRegion=regionSelect?.value,previousId=state.nextId;
+    if(typeSelect)typeSelect.value="civil";
+    if(regionSelect)regionSelect.value="random";
     const item=makeNumber();
+    state.nextId=previousId;
+    if(typeSelect)typeSelect.value=previousType;
+    if(regionSelect)regionSelect.value=previousRegion;
     return item;
   }
   async function openCases(count){
