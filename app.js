@@ -300,7 +300,7 @@
     if(selectedCountry!=="ru")return selectedCountry;
     const chosen=$("plate-type")?.value||"all";
     if(chosen!=="all")return chosen;
-    const pool=["civil","civil","civil","taxi","police","military"];
+    const pool=["civil"];
     return pool[Math.floor(Math.random()*pool.length)];
   }
   function selectedRegion(type){
@@ -469,8 +469,8 @@
       if(tierRank(item.key)<4)activeSpinSkip=finish;
       interval=setInterval(()=>{
         const previewType=selectedPlateType();
-        const preview=previewType==="police"?letters[Math.floor(Math.random()*letters.length)]+" "+String(1000+Math.floor(Math.random()*9000)):previewType==="military"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:previewType==="belarus"?String(1000+Math.floor(Math.random()*9000))+" "+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)]:letters[Math.floor(Math.random()*letters.length)]+String(1+Math.floor(Math.random()*999)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
-        $("plate-main").textContent=preview;$("plate-region").textContent=previewType==="belarus"?"BY":previewType==="military"?"ВОЙСКА":regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
+        const preview=letters[Math.floor(Math.random()*letters.length)]+String(1+Math.floor(Math.random()*999)).padStart(3,"0")+letters[Math.floor(Math.random()*letters.length)]+letters[Math.floor(Math.random()*letters.length)];
+        $("plate-main").textContent=preview;$("plate-region").textContent=regions[Math.floor(Math.random()*regions.length)].trim();ticks++;
         if(ticks>=10)finish();
       },autoSpinTickMs);
     });
@@ -1110,7 +1110,7 @@
     const screen=$("auto-spin-speed");if(screen)screen.value=String(autoSpinTickMs);
     if(autoSpinRunning)setAutoSpinStatus("Автокликер включён. Новая скорость: "+autoSpinTickMs+" мс на шаг анимации.");
   });
-  $("auto-spin-start-screen").addEventListener("click",startAutoSpin);
+  $("auto-spin-start-screen").addEventListener("click",()=>{if(!adminUser){notify("Войди как администратор");return;}localStorage.setItem("nomgen-admin-autoclick-visible","1");renderAutoClickerWidget();startAutoSpin();});
   $("auto-spin-stop-screen").addEventListener("click",()=>stopAutoSpin());
   $("auto-spin-speed").addEventListener("change",()=>{
     autoSpinTickMs=Math.max(20,Math.min(150,Number($("auto-spin-speed").value)||60));
