@@ -670,12 +670,16 @@
     const host=$("odds-controls");if(!host)return;
     const total=weights.reduce((a,b)=>a+b,0);
     host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(weights[i]||0)+'"><b>'+((total?weights[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
+    const saveButton=$("apply-odds");if(saveButton)saveButton.hidden=true;
+    host.querySelectorAll("[data-odds]").forEach(input=>input.addEventListener("input",()=>{if(saveButton)saveButton.hidden=false;}));
   }
   function renderGlobalOdds(values){
     const host=$("global-odds-controls");if(!host)return;
     const safe=Array.isArray(values)&&values.length===5?values.map(Number):[...DEFAULT_WEIGHTS];
     const total=safe.reduce((a,b)=>a+b,0);
     host.innerHTML=tiers.map((tier,i)=>'<label class="odds-row"><span>'+tier.name+'</span><input data-global-odds="'+i+'" type="number" min="0" step="0.1" value="'+Number(safe[i]||0)+'"><b>'+((total?safe[i]/total*100:0).toFixed(2))+'%</b></label>').join("");
+    const saveButton=$("apply-global-odds");if(saveButton)saveButton.hidden=true;
+    host.querySelectorAll("[data-global-odds]").forEach(input=>input.addEventListener("input",()=>{if(saveButton)saveButton.hidden=false;}));
   }
   async function loadGlobalOdds(){
     if(!supabase)return;
@@ -1084,8 +1088,8 @@
   });
   $("apply-global-odds").addEventListener("click",async()=>{
     if(!supabase||!adminUser){notify("Войди как администратор");return;}
-    const next=Array.from(document.querySelectorAll("[data-global-odds]"),el=>Math.max(0,Number(el.value)||0));
-    if(next.length!==5||next.every(x=>x===0)){notify("Хотя бы один глобальный вес должен быть больше нуля");return;}
+    const next=Array.from(document.querySelectorAll("[data-global-odds]"),el=>Number(el.value));
+    if(next.length!==5||next.some(x=>!Number.isFinite(x)||x<0)||next.every(x=>x===0)){$("global-odds-status").textContent="Укажи 5 неотрицательных весов. Хотя бы один должен быть больше нуля.";notify("Проверь значения глобальных шансов");return;}
     const {error}=await supabase.from("nomgen_settings").update({weights:next,updated_at:new Date().toISOString()}).eq("id",1);
     if(error){$("global-odds-status").textContent="Не удалось сохранить глобальные шансы: "+error.message;notify("Не удалось сохранить глобальные шансы");return;}
     renderGlobalOdds(next);$("global-odds-status").textContent="Глобальные шансы сохранены.";notify("Глобальные шансы обновлены");
