@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Russo+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261110-cases-regions-leaders">
+  <link rel="stylesheet" href="style.css?v=20261110-case-fix2">
   <style>
     .hero-art{width:min(44vw,450px);height:auto;min-height:0;display:block;flex-shrink:0;position:relative;overflow:visible}
     .hero-logo{display:block;width:100%;height:auto;max-height:390px;object-fit:contain;filter:drop-shadow(0 18px 35px #000b);position:relative;z-index:2}
@@ -110,7 +110,7 @@
 <button class="menu-tile collection-tile" id="menu-collection"><span class="tile-art plate-stack"><i>А777АА</i><i>М001ММ</i><i>Х999ХХ</i></span><span class="tile-caption"><b>Коллекция</b><small>Твои номера и избранное</small></span><span class="tile-arrow">↗</span></button>
 <button class="menu-tile upgrades-tile" id="menu-upgrades"><span class="tile-art hammer-art"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M38 8 56 26 47 35 29 17z" fill="currentColor"/><path d="m31 22 8 8-23 27a5 5 0 0 1-7-7z" fill="currentColor"/><path d="m25 13 8-8 9 9-8 8z" fill="currentColor"/></svg></span><span class="tile-caption"><b>Улучшения</b><small>Прокачай удачу и редкость</small></span><span class="tile-arrow">↗</span></button>
 <button class="menu-tile leaders-tile" id="menu-leaders"><span class="tile-art"><span class="menu-symbol">♜</span></span><span class="tile-caption"><b>Лидеры</b><small>Сравни свою коллекцию с игроками</small></span><span class="tile-arrow">↗</span></button>
-<button class="menu-tile cases-tile" id="menu-cases"><span class="tile-art"><span class="case-menu-art">★<small>CASE OPENING</small></span></span><span class="tile-caption"><b>Кейсы</b><small>Открывай номера с прокруткой</small></span><span class="tile-arrow">↗</span></button>
+<button class="menu-tile cases-tile" id="menu-cases"><span class="tile-art"><span class="case-menu-art" aria-label="Кейс"><span class="case-icon-box"><i></i><b></b></span><small>CASE OPENING</small></span></span><span class="tile-caption"><b>Кейсы</b><small>Открывай номера с прокруткой</small></span><span class="tile-arrow">↗</span></button>
 <button class="menu-tile profile-tile" id="menu-profile"><span class="tile-art"><span class="menu-symbol">⚙</span></span><span class="tile-caption"><b>Профиль и настройки</b><small>Аккаунт, аватар и звук</small></span><span class="tile-arrow">↗</span></button>
 </div></section></div>
     <div id="cases-modal" class="feature-modal" hidden><section class="feature-card case-window" role="dialog" aria-modal="true" aria-labelledby="cases-title"><button class="feature-close" id="cases-close" aria-label="Закрыть">×</button><span class="menu-eyebrow">НОМГЕН · CASE OPENING</span><h2 id="cases-title">Кейсы с номерами</h2><p class="catalog-note">Прокрутка в стиле CS. Каждый кейс содержит случайный автомобильный номер.</p><div class="case-prices"><button class="case-buy" id="case-buy-one">Открыть 1 кейс · 250 000 ₽</button><button class="case-buy" id="case-buy-five">Открыть 5 кейсов · 1 250 000 ₽</button></div><div id="case-roulette-area"></div><div id="case-results" class="case-results"></div></section></div>
@@ -152,6 +152,6 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=20261110-cases-regions-leaders"></script>
+  <script src="app.js?v=20261110-case-fix2"></script>
 </body>
 </html>
