@@ -373,3 +373,5 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 body{padding-bottom:0!important}
 
 .autoclick-admin-card{display:block;padding:14px;border:1px solid #ffffff1f;border-radius:12px;background:#111927}.autoclick-admin-card h3{margin:0 0 8px;font-size:16px;color:#fff}.autoclick-admin-card .admin-autoclick-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;margin-top:12px!important}.autoclick-admin-card .admin-autoclick-actions button{display:block!important;visibility:visible!important;opacity:1}.autoclick-admin-card .admin-autoclick-actions button:disabled{opacity:.45}
+
+.admin-autoclick-widget input[type="number"],.autoclick-admin-card input[type="number"]{max-width:150px;padding:7px 10px;border:1px solid #ffffff22;border-radius:8px;background:#202a3b;color:#fff;font:700 11px Manrope,sans-serif;box-sizing:border-box}.admin-autoclick-widget label,.autoclick-admin-card .admin-field{display:flex;align-items:center;justify-content:space-between;gap:10px}
