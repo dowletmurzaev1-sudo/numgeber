@@ -323,3 +323,31 @@ body{background:radial-gradient(ellipse at 50% 8%,#292016 0,#111016 38%,#09090d 
 .case-reward-button.claim{border-color:#4d91ff88;background:linear-gradient(145deg,#174d92,#18345a)}
 .case-reward-button.sell{border-color:#e6b94f88;background:linear-gradient(145deg,#63471a,#332613);color:#ffe1a0}
 .case-result-done .case-result-actions{color:#aab4c4;font-size:11px}
+
+
+/* Country selector and country-specific registration plate layouts */
+.country-picker{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;margin:13px auto 8px;flex-wrap:wrap}
+.country-choice{display:flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:7px 11px;border:1px solid #ffffff24;border-radius:12px;background:#1a2130;color:#c7d0df;font:700 10px Manrope,sans-serif;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
+.country-choice span{font-size:16px;line-height:1}
+.country-choice.active{border-color:#e8bd5b;background:linear-gradient(145deg,#49361c,#292017);color:#ffe09a;box-shadow:0 0 13px #d6a74622}
+.country-choice:active{transform:scale(.97)}
+.license-plate[data-country="belarus"],.license-plate[data-country="kazakhstan"],.license-plate[data-country="ukraine"]{position:relative;overflow:hidden}
+.license-plate[data-country="belarus"]::before,.license-plate[data-country="kazakhstan"]::before,.license-plate[data-country="ukraine"]::before{content:"";position:absolute;z-index:1;left:0;top:0;bottom:0;width:13px;border-right:1px solid #aeb5bd}
+.license-plate[data-country="belarus"]::before{background:linear-gradient(to bottom,#d71920 0 34%,#fff 34% 42%,#168b45 42% 100%)}
+.license-plate[data-country="kazakhstan"]::before{background:linear-gradient(to right,#00a3dd 0 50%,#f5d547 50% 100%)}
+.license-plate[data-country="ukraine"]::before{background:linear-gradient(to right,#0057b8 0 50%,#ffd700 50% 100%)}
+.license-plate[data-country="belarus"] .plate-main,.license-plate[data-country="kazakhstan"] .plate-main,.license-plate[data-country="ukraine"] .plate-main{font-size:clamp(24px,4.5vw,40px);letter-spacing:1px;padding-left:12px}
+.license-plate[data-country="ukraine"] .plate-main{font-size:clamp(21px,4vw,35px)}
+.license-plate[data-country="belarus"] .plate-rus,.license-plate[data-country="kazakhstan"] .plate-rus,.license-plate[data-country="ukraine"] .plate-rus{display:grid;place-items:center;width:48px;min-width:48px;font-size:13px;font-weight:900;letter-spacing:0;border-left:2px solid #b9bec4;color:#17202a}
+.license-plate[data-country="belarus"] .plate-region-big,.license-plate[data-country="kazakhstan"] .plate-region-big,.license-plate[data-country="ukraine"] .plate-region-big{font-size:clamp(17px,4vw,27px)}
+.license-plate[data-country="belarus"]{background:linear-gradient(180deg,#fff,#e9edf0);border-color:#c8cdd1}
+.license-plate[data-country="kazakhstan"]{background:linear-gradient(180deg,#fff,#e9edf0);border-color:#c8cdd1}
+.license-plate[data-country="ukraine"]{background:linear-gradient(180deg,#fff,#e9edf0);border-color:#c8cdd1}
+@media(max-width:600px){
+ .country-picker{gap:6px;margin:12px auto 2px;padding:0 2px}
+ .country-choice{flex:1 1 calc(25% - 6px);min-width:0;flex-direction:column;gap:3px;padding:7px 3px;min-height:48px;border-radius:12px;font-size:9px}
+ .country-choice span{font-size:18px}
+ .license-plate[data-country="belarus"] .plate-main,.license-plate[data-country="kazakhstan"] .plate-main{font-size:clamp(22px,6vw,34px)}
+ .license-plate[data-country="ukraine"] .plate-main{font-size:clamp(19px,5vw,29px)}
+ .license-plate[data-country="belarus"] .plate-rus,.license-plate[data-country="kazakhstan"] .plate-rus,.license-plate[data-country="ukraine"] .plate-rus{width:40px;min-width:40px;font-size:11px}
+}
