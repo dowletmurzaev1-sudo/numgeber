@@ -19,7 +19,7 @@
   let yandexSaveQueue = Promise.resolve();
   let yandexFullscreenTimer = null;
   let adminUser = null;
-  let autoSpinTickMs = 60;
+  let autoSpinTickMs = Math.max(20,Math.min(150,Number(localStorage.getItem("nomgen-auto-spin-speed"))||60));
   let currentUser = null;
   let playerReady = false;
   let loadingUserId = null;
@@ -483,6 +483,7 @@
     if(!widget)return;
     const visible=!!adminUser&&localStorage.getItem("nomgen-admin-autoclick-visible")==="1";
     widget.hidden=!visible;
+    const speed=$("auto-spin-speed");if(speed)speed.value=String(autoSpinTickMs);
     if(!adminUser&&autoSpinRunning)stopAutoSpin("Доступ администратора потерян.");
   }
   function setAutoSpinStatus(message){
@@ -1102,6 +1103,7 @@
   $("auto-spin-stop-screen").addEventListener("click",()=>stopAutoSpin());
   $("auto-spin-speed").addEventListener("change",()=>{
     autoSpinTickMs=Math.max(20,Math.min(150,Number($("auto-spin-speed").value)||60));
+    localStorage.setItem("nomgen-auto-spin-speed",String(autoSpinTickMs));
     if(autoSpinRunning)setAutoSpinStatus("Автокликер включён. Новая скорость: "+autoSpinTickMs+" мс на шаг анимации.");
   });
   $("forced-clear").addEventListener("click",async()=>{
