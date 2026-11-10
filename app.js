@@ -862,7 +862,7 @@
   $("profile-logout").addEventListener("click",logoutAccount);
   $("spin-button").addEventListener("click",spin);
   // На экране генератора можно запускать прокрутку нажатием почти в любое место.
-  $("machine").addEventListener("click",event=>{
+  document.querySelector(".machine").addEventListener("click",event=>{
     if(event.target.closest("button,select,label,input,a"))return;
     if(!$("spin-button").disabled)spin();
   });
